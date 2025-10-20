@@ -1,0 +1,31 @@
+Explanations & important notes
+
+Transactions & Atomicity
+
+All critical operations that change game state (dealing, playing cards, forced draws, deducting coins) are performed inside Firestore transactions. This prevents race conditions where both players attempt moves simultaneously.
+
+Reshuffle logic
+
+When deck is empty and a draw is required, we remove the last played card from discard (preserve pileTop) and move the rest of discard into deck, shuffle, then continue drawing. This preserves the rule “do not return the last played card to the deck”.
+
+WHOT handling
+
+When a WHOT is played, the UI must present a shape selection dialog and pass the chosen shape to playCard(..., whotChosenShape: 'circle'). The pileTop is stored as "<shape>|20", and whotChosen is saved for UI convenience.
+
+Entry Fee & Balance Check
+
+createGame checks that both players have at least entryFee and then deducts it inside the same transaction. This prevents a race where two separate reads could allow a double-spend. After deduction, the games/{gameId} doc is created and users/{uid}.currentGameId is set.
+
+Winner & award
+
+playCard sets the winner and status: finished if a player's hand becomes empty. Use awardWinnerCoins() to credit the winner and (optionally) sync with MySQL.
+
+Important: awarding to MySQL should be done server-side or via verified endpoints for production trustworthiness. The example awardWinnerCoins shows a Firestore transaction to update the balance, then optionally calls a mysqlSyncCallback to reflect the change in your MySQL backend.
+
+Security
+
+Client-level validation is used here for speed and UX, but this cannot fully prevent cheating. For production, implement server-side Cloud Functions to validate moves (check that a client-submitted play is legal given the stored server state) before applying state changes.
+
+Performance considerations
+
+This approach stores arrays (deck, discard, hands) in a single Firestore document. For two-player Whot this is normally fine, but be mindful of document size limits if augmenting with many players or large metadata.
