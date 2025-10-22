@@ -37,22 +37,7 @@ class GameService {
 
   // ------------------ Deck helpers ------------------
 
-  /// Build and return a shuffled deck as List<String> ("shape|number")
-  List<String> buildDeck({int whotCopies = 1}) {
-    final shapes = ['circle', 'triangle', 'star', 'rectangle', 'cross'];
-    final deck = <String>[];
-    for (final s in shapes) {
-      for (int n = 1; n <= 14; n++) {
-        deck.add('$s|$n');
-      }
-    }
-    // Add WHOT copies (20)
-    for (int i = 0; i < whotCopies; i++) {
-      deck.add('whot|20');
-    }
-    deck.shuffle(Random(DateTime.now().microsecondsSinceEpoch));
-    return deck;
-  }
+ 
 
   // ------------------ Utility ------------------
 
@@ -78,6 +63,7 @@ class GameService {
   ///
   /// Returns the new gameId on success.
   Future<String> createGameAndDeduct({
+    //not in use//
     required String hostUid,
     required String opponentUid,
     int? overrideFee,
@@ -117,7 +103,7 @@ class GameService {
       });
 
       // Build and deal deck
-      final deck = buildDeck();
+      final deck = generateDeck();
       final hostHand = deck.sublist(0, initialHandSize);
       final oppHand = deck.sublist(initialHandSize, initialHandSize * 2);
       final remaining = deck.sublist(initialHandSize * 2);
@@ -227,7 +213,7 @@ class GameService {
   /// - Removes card from hand, appends to discard, updates pileTop (with whotChosen if applicable)
   /// - Handles special effects: pick2, general market, holdOn, suspension
   /// - Enforces pendingPick behavior: if there is a pendingPick for some player, other pick2 cannot be played
-  Future<void> playCard({
+  Future<void> playCardr({
     required String gameId,
     required String playerId,
     required String cardStr, // "shape|number"
@@ -399,47 +385,160 @@ class GameService {
   // ------------------ Allow player to explicitly draw (e.g., when they have no valid card) ------------------
 
   /// Allows a player to draw N cards (useful for "draw" action if they cannot play)
-  Future<void> drawCards({
-    required String gameId,
-    required String playerId,
-    required int count,
-  }) async {
-    final gameRef = firestore.collection('games').doc(gameId);
+  // Future<void> drawCards({
+  //   required String gameId,
+  //   required String playerId,
+  //   required int count,
+  // }) async {
+  //   final gameRef = firestore.collection('games').doc(gameId);
 
-    await firestore.runTransaction((tx) async {
-      final snap = await tx.get(gameRef);
-      if (!snap.exists) throw Exception('Game not found');
-      final data = snap.data()!;
+  //   await firestore.runTransaction((tx) async {
+  //     final snap = await tx.get(gameRef);
+  //     if (!snap.exists) throw Exception('Game not found');
+  //     final data = snap.data()!;
 
-      final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-      final deck = List<String>.from(_toStringList(data['deck']));
-      final discard = List<String>.from(_toStringList(data['discard']));
+  //     final hands = Map<String, dynamic>.from(data['hands'] ?? {});
+  //     final deck = List<String>.from(_toStringList(data['deck']));
+  //     final discard = List<String>.from(_toStringList(data['discard']));
 
-      final result = await _drawInsideTransaction(
-        tx: tx,
-        gameRef: gameRef,
-        currentData: {
-          'deck': deck,
-          'discard': discard,
-          'hands': hands,
-        },
-        targetPlayerId: playerId,
-        count: count,
-      );
+  //     final result = await _drawInsideTransaction(
+  //       tx: tx,
+  //       gameRef: gameRef,
+  //       currentData: {
+  //         'deck': deck,
+  //         'discard': discard,
+  //         'hands': hands,
+  //       },
+  //       targetPlayerId: playerId,
+  //       count: count,
+  //     );
 
-      tx.update(gameRef, {
-        'deck': result['deck'],
-        'discard': result['discard'],
-        'hands': result['hands'],
-        'lastAction': {
-          'by': playerId,
-          'type': 'draw',
-          'count': count,
-          'ts': FieldValue.serverTimestamp(),
-        }
-      });
+  //     tx.update(gameRef, {
+  //       'deck': result['deck'],
+  //       'discard': result['discard'],
+  //       'hands': result['hands'],
+  //       'lastAction': {
+  //         'by': playerId,
+  //         'type': 'draw',
+  //         'count': count,
+  //         'ts': FieldValue.serverTimestamp(),
+  //       }
+  //     });
+  //   });
+  // }
+//   Future<void> drawCards({
+//   required String gameId,
+//   required String playerId,
+//   required int count,
+// }) async {
+//   final gameRef = firestore.collection('games').doc(gameId);
+
+//   await firestore.runTransaction((tx) async {
+//     final snap = await tx.get(gameRef);
+//     if (!snap.exists) throw Exception('Game not found');
+//     final data = snap.data()!;
+
+//     final hands = Map<String, dynamic>.from(data['hands'] ?? {});
+//     final deck = List<String>.from(_toStringList(data['deck']));
+//     final discard = List<String>.from(_toStringList(data['discard']));
+//     final pending = data['pendingAction'];
+
+//     // 🔹 Perform the actual draw
+//     final result = await _drawInsideTransaction(
+//       tx: tx,
+//       gameRef: gameRef,
+//       currentData: {
+//         'deck': deck,
+//         'discard': discard,
+//         'hands': hands,
+//       },
+//       targetPlayerId: playerId,
+//       count: count,
+//     );
+
+//     final updates = {
+//       'deck': result['deck'],
+//       'discard': result['discard'],
+//       'hands': result['hands'],
+//       'lastAction': {
+//         'by': playerId,
+//         'type': 'draw',
+//         'count': count,
+//         'ts': FieldValue.serverTimestamp(),
+//       },
+//     };
+
+//     // 🔹 Handle "Pick Two" or "General Market" resolution
+//     if (pending != null && pending['type'] == 'pick') {
+//       final from = pending['from'];
+//       final pendingCount = pending['count'];
+
+//       // Check if this draw resolves the pending pick
+//       if (count >= pendingCount) {
+//         updates['turn'] = from;
+//         updates['pendingAction'] = null;
+//       }
+//     }
+
+//     tx.update(gameRef, updates);
+//   });
+// }
+
+
+Future<void> drawCards({
+  required String gameId,
+  required String playerId,
+  required int count,
+}) async {
+  final gameRef = firestore.collection('games').doc(gameId);
+
+  await firestore.runTransaction((tx) async {
+    final snap = await tx.get(gameRef);
+    if (!snap.exists) throw Exception('Game not found');
+    final data = snap.data()!;
+
+    final hands = Map<String, dynamic>.from(data['hands'] ?? {});
+    final deck = List<String>.from(_toStringList(data['deck']));
+    final discard = List<String>.from(_toStringList(data['discard']));
+    final forcedDraw = data['forcedDraw'];
+
+    int actualCount = count;
+    String nextTurn = data['currentTurn'];
+
+    if (forcedDraw != null && forcedDraw['playerId'] == playerId) {
+      // This player is forced to draw cards (from 2 or 14)
+      actualCount = forcedDraw['count'];
+      nextTurn = data['players'].firstWhere((p) => p != playerId);
+    }
+
+    final result = await _drawInsideTransaction(
+      tx: tx,
+      gameRef: gameRef,
+      currentData: {
+        'deck': deck,
+        'discard': discard,
+        'hands': hands,
+      },
+      targetPlayerId: playerId,
+      count: actualCount,
+    );
+
+    tx.update(gameRef, {
+      'deck': result['deck'],
+      'discard': result['discard'],
+      'hands': result['hands'],
+      'currentTurn': nextTurn,
+      'forcedDraw': null,
+      'lastAction': {
+        'by': playerId,
+        'type': 'draw',
+        'count': actualCount,
+        'ts': FieldValue.serverTimestamp(),
+      }
     });
-  }
+  });
+}
+
 
   // ------------------ Check winner and award coins (non-transactional across external systems) ------------------
 
@@ -529,6 +628,42 @@ class GameService {
   }
 
 
+  // 🟩 Generate 50 cards (1–14), excluding Whot (20)
+// Each number appears multiple times to reach 50 total
+List<String> generateDeck() {
+ 
+  List<String> shapes = ['circle', 'cross', 'triangle', 'square'];
+  List<String> deck = [];
+
+
+
+  // 🔹 Generate numbers 1–14 for each shape (no Whot)
+  for (var shape in shapes) {
+    for (int number = 1; number <= 14; number++) {
+      deck.add('$shape-$number');
+    }
+  }
+
+  // 🔹 Optional: Uncomment if you ever want to add Whot cards later
+  // for (int i = 0; i < 2; i++) {
+  //   deck.add('whot-20');
+  // }
+
+  // 🔹 Shuffle deck
+  deck.shuffle();
+
+  // 🔹 Ensure exactly 50 cards (slice down if needed)
+  deck = deck.take(50).toList();
+
+  print('Generated deck count: ${deck.length}');
+  print('First few cards: ${deck.take(5).toList()}');
+
+  return deck;
+}
+
+  
+
+
   /// Creates a new game session between two players
 /// - [players] is a list of two user IDs [player1, player2]
 /// - [hostUid] is the user who initiated the match
@@ -568,8 +703,9 @@ Future<String> createGame(List<String> players, String hostUid) async {
   });
 
   // Build a fresh Whot deck
-  final deck = _buildDeck();
-  deck.shuffle();
+  //final deck = _buildDeck();
+  final deck = generateDeck();
+  
 
   // Deal 5 cards each
   final player1Hand = deck.sublist(0, 5);
@@ -598,23 +734,6 @@ Future<String> createGame(List<String> players, String hostUid) async {
 }
 
 /// Builds a Whot deck with the standard Naija Whot cards.
-List<Map<String, dynamic>> _buildDeck() {
-  final shapes = ['circle', 'cross', 'triangle', 'square', 'star'];
-  final List<Map<String, dynamic>> deck = [];
 
-  for (var shape in shapes) {
-    for (var number = 1; number <= 14; number++) {
-      // Skip impossible cards (e.g. shape 20 reserved for Whot)
-      deck.add({'shape': shape, 'number': number});
-    }
-  }
-
-  // Add Whot cards (number 20)
-  for (var i = 0; i < 5; i++) {
-    deck.add({'shape': 'whot', 'number': 20});
-  }
-
-  return deck;
-}
 
 }

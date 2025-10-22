@@ -191,12 +191,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
     // Play card via GameService (transaction)
     try {
-      await _gameService.playCard(
-        gameId: widget.gameId,
-        playerId: widget.myUid,
-        cardStr: cardStr,
-        whotChosenShape: chosenShape,
-      );
+      // await _gameService.playCard(
+      //   gameId: widget.gameId,
+      //   playerId: widget.myUid,
+      //   cardStr: cardStr,
+      //   whotChosenShape: chosenShape,
+      // );
 
       // Play effect sound
       try {

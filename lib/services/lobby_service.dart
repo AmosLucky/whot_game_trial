@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LobbyService {
@@ -84,22 +86,32 @@ class LobbyService {
     });
   }
 
-  /// Generate standard Whot deck
-  List<Map<String, dynamic>> _generateWhotDeck() {
-    final shapes = ['circle', 'cross', 'triangle', 'square', 'star'];
-    final cards = <Map<String, dynamic>>[];
 
-    for (var shape in shapes) {
-      for (var num = 1; num <= 14; num++) {
-        cards.add({'shape': shape, 'number': num});
-      }
+
+List<Map<String, dynamic>> _generateWhotDeck() {
+  final shapes = ['circle', 'cross', 'triangle', 'square', 'star'];
+  final cards = <Map<String, dynamic>>[];
+
+  // Generate 70 cards (1–14 × 5 shapes)
+  for (var shape in shapes) {
+    for (var num = 1; num <= 14; num++) {
+      cards.add({'shape': shape, 'number': num});
     }
-
-    // Add Whot cards (20)
-    for (var i = 0; i < 4; i++) {
-      cards.add({'shape': 'whot', 'number': 20});
-    }
-
-    return cards;
   }
+
+  // Shuffle the deck
+  cards.shuffle(Random());
+
+  // Take only 50 cards randomly
+  final selectedDeck = cards.take(50).toList();
+
+  // (Optional) Uncomment this line if you want to later include Whot (20)
+  // selectedDeck.add({'shape': 'whot', 'number': 20});
+
+  return selectedDeck;
+}
+
+
+
+
 }

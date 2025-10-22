@@ -195,8 +195,8 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
         tx.delete(_firestore.collection(waitingCollection).doc(myUid));
 
         // Build deck and hands (simple serialized "shape|number" strings)
-        final deck = _buildDeck();
-        deck.shuffle();
+        final deck = _gameSvc.generateDeck(); //_buildDeck();
+        // deck.shuffle();
 
         final int handSize = 5;
         final List<String> hand1 = deck.sublist(0, handSize);
@@ -291,17 +291,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
   }
 
   /// Helper - build deck as List<String> "shape|number"
-  List<String> _buildDeck({int whotCopies = 1}) {
-    final shapes = ['circle', 'triangle', 'star', 'rectangle', 'cross'];
-    final deck = <String>[];
-    for (final s in shapes) {
-      for (int n = 1; n <= 14; n++) {
-        deck.add('$s|$n');
-      }
-    }
-    for (int i = 0; i < whotCopies; i++) deck.add('whot|20');
-    return deck;
-  }
+
 
   /// Cancel matchmaking and go back
   Future<void> _cancel() async {
