@@ -24,6 +24,7 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
   late final Stream<DocumentSnapshot<Map<String, dynamic>>> _gameStream;
   bool _initializing = false;
   bool _winDialogShown = false; // prevent multiple dialogs
+  
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
     if (raw is Map) return raw.keys.map((k) => k.toString()).toList();
     return [raw.toString()];
   }
+
 
   Future<void> _transactionalInitIfNeeded() async {
     if (_initializing) return;
@@ -129,304 +131,6 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
     if (pc.length < 2 || pt.length < 2) return false;
     return pc[0] == pt[0] || pc[1] == pt[1];
   }
-//   Future<void> playCard({
-//   required String gameId,
-//   required String playerId,
-//   required Map<String, dynamic> card,
-// }) async {
-//   final gameDoc = FirebaseFirestore.instance.collection('games').doc(gameId);
-//   final snapshot = await gameDoc.get();
-//   if (!snapshot.exists) return;
-
-//   final gameData = snapshot.data()!;
-//   final players = List<String>.from(gameData['players']);
-//   final currentTurn = gameData['currentTurn'];
-//   final nextPlayerId = players.firstWhere((p) => p != playerId);
-
-//   // Add played card to discard pile
-//   final discardPile = List<Map<String, dynamic>>.from(gameData['discardPile'] ?? []);
-//   discardPile.add(card);
-
-//   // Remove card from player's hand
-//   final playerHands = Map<String, dynamic>.from(gameData['playerHands']);
-//   final playerCards = List<Map<String, dynamic>>.from(playerHands[playerId]);
-//   playerCards.removeWhere((c) => c['shape'] == card['shape'] && c['number'] == card['number']);
-//   playerHands[playerId] = playerCards;
-
-//   // Default next turn
-//   String nextTurn = nextPlayerId;
-
-//   // 🃏 Apply Whot Rules
-//   switch (card['number']) {
-//     case 1: // Hold On → same player plays again
-//       nextTurn = playerId;
-//       break;
-
-//     case 2: // Pick 2 → opponent picks 2 cards, player continues
-//       final opponentCards = List<Map<String, dynamic>>.from(playerHands[nextPlayerId]);
-//       final deck = List<Map<String, dynamic>>.from(gameData['deck']);
-//       for (var i = 0; i < 2 && deck.isNotEmpty; i++) {
-//         opponentCards.add(deck.removeAt(0));
-//       }
-//       playerHands[nextPlayerId] = opponentCards;
-//       nextTurn = playerId;
-//       break;
-
-//     case 8: // Suspension → opponent misses turn
-//       nextTurn = playerId;
-//       break;
-
-//     case 14: // General Market → opponent picks one card, player continues
-//       final opponentCards = List<Map<String, dynamic>>.from(playerHands[nextPlayerId]);
-//       final deck = List<Map<String, dynamic>>.from(gameData['deck']);
-//       if (deck.isNotEmpty) {
-//         opponentCards.add(deck.removeAt(0));
-//       }
-//       playerHands[nextPlayerId] = opponentCards;
-//       nextTurn = playerId;
-//       break;
-
-//     default:
-//       // Normal play → next player's turn
-//       nextTurn = nextPlayerId;
-//   }
-
-//   // Save game state
-//   await gameDoc.update({
-//     'playerHands': playerHands,
-//     'discardPile': discardPile,
-//     'deck': gameData['deck'],
-//     'currentTurn': nextTurn,
-//   });
-
-//   // 🏆 Check for winner
-//   if (playerHands[playerId].isEmpty) {
-//     await gameDoc.update({
-//       'winner': playerId,
-//       'status': 'ended',
-//     });
-//   }
-// }
-
-// Future<void> playCard(String rawCard) async {
-//   final card = _normalizeCard(rawCard);
-//   final gameRef = _firestore.collection('games').doc(widget.gameId);
-
-//   // 🟩 --- WHOT CARD LOGIC ---
-//   if (_isWhot(card)) {
-//     final chosen = await chooseShapeDialog(context);
-//     if (chosen.isEmpty) return;
-
-//     final chosenShape = chosen.toLowerCase();
-
-//     await _firestore.runTransaction((tx) async {
-//       final snap = await tx.get(gameRef);
-//       if (!snap.exists) return;
-//       final data = snap.data() ?? {};
-//       final turn = (data['turn'] ?? '').toString();
-//       if (turn != widget.myUid) return;
-
-//       final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-//       final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
-//       myHand.remove(card);
-//       hands[widget.myUid] = myHand;
-
-//       final players = _playersFromData(data);
-//       final next = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
-
-//       tx.update(gameRef, {
-//         'hands': hands,
-//         'topCard': 'whot',
-//         'requiredCard': chosenShape,
-//         'shapeInPlay': chosenShape,
-//         'turn': next,
-//       });
-//     });
-//     return;
-//   }
-
-//   // 🟨 --- NORMAL CARD LOGIC ---
-//   await _firestore.runTransaction((tx) async {
-//     final snap = await tx.get(gameRef);
-//     if (!snap.exists) return;
-//     final data = snap.data() ?? {};
-//     final turn = (data['turn'] ?? '').toString();
-//     if (turn != widget.myUid) return;
-
-//     final topCard = _normalizeCard(data['topCard']);
-//     final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
-
-//     if (!_cardAllowed(card, topCard, requiredCard)) return;
-
-//     final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-//     final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
-//     myHand.remove(card);
-//     hands[widget.myUid] = myHand;
-
-//     final players = _playersFromData(data);
-//     final opponent = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
-
-//     final cardNumber = int.tryParse(card.split('-')[1]) ?? 0;
-
-//     // 🟦 Default: Next player's turn
-//     String nextTurn = opponent;
-//     final updates = <String, dynamic>{
-//       'hands': hands,
-//       'topCard': card,
-//       'shapeInPlay': card.split('-')[0],
-//       'requiredCard': '',
-//     };
-
-//     // 🟥 --- APPLY NAIJA WHOT RULES ---
-//     switch (cardNumber) {
-//       case 1: // Hold On
-//         nextTurn = widget.myUid; // play again
-//         break;
-
-//       case 2: // Pick Two
-//         final oppHand = List<String>.from((hands[opponent] ?? []).map(_normalizeCard));
-//         final deck = List<String>.from(data['deck'] ?? []);
-//         if (deck.length >= 2) {
-//           oppHand.insert(0, deck.removeAt(0));
-//           oppHand.insert(0, deck.removeAt(0));
-//         }
-//         hands[opponent] = oppHand;
-//         updates['deck'] = deck;
-//         nextTurn = widget.myUid; // still your turn
-//         break;
-
-//       case 8: // Suspension
-//         nextTurn = widget.myUid; // skip opponent
-//         break;
-
-//       case 14: // General Market
-//         final oppHand2 = List<String>.from((hands[opponent] ?? []).map(_normalizeCard));
-//         final deck2 = List<String>.from(data['deck'] ?? []);
-//         if (deck2.isNotEmpty) {
-//           oppHand2.insert(0, deck2.removeAt(0)); // opponent picks one
-//         }
-//         hands[opponent] = oppHand2;
-//         updates['deck'] = deck2;
-//         nextTurn = widget.myUid; // still your turn
-//         break;
-//     }
-
-//     updates['turn'] = nextTurn;
-
-//     tx.update(gameRef, updates);
-//   });
-// }
-
-
-
-// Future<void> playCard(String rawCard) async {
-//   final card = _normalizeCard(rawCard);
-//   final gameRef = _firestore.collection('games').doc(widget.gameId);
-
-//   // 🟩 --- WHOT CARD LOGIC ---
-//   if (_isWhot(card)) {
-//     final chosen = await chooseShapeDialog(context);
-//     if (chosen.isEmpty) return;
-
-//     final chosenShape = chosen.toLowerCase();
-
-//     await _firestore.runTransaction((tx) async {
-//       final snap = await tx.get(gameRef);
-//       if (!snap.exists) return;
-//       final data = snap.data() ?? {};
-//       final turn = (data['turn'] ?? '').toString();
-//       if (turn != widget.myUid) return;
-
-//       final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-//       final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
-//       myHand.remove(card);
-//       hands[widget.myUid] = myHand;
-
-//       final players = _playersFromData(data);
-//       final next = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
-
-//       tx.update(gameRef, {
-//         'hands': hands,
-//         'topCard': 'whot',
-//         'requiredCard': chosenShape,
-//         'shapeInPlay': chosenShape,
-//         'turn': next,
-//         'pendingAction': null,
-//       });
-//     });
-//     return;
-//   }
-
-//   // 🟨 --- NORMAL CARD LOGIC ---
-//   await _firestore.runTransaction((tx) async {
-//     final snap = await tx.get(gameRef);
-//     if (!snap.exists) return;
-//     final data = snap.data() ?? {};
-//     final turn = (data['turn'] ?? '').toString();
-//     if (turn != widget.myUid) return;
-
-//     final topCard = _normalizeCard(data['topCard']);
-//     final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
-
-//     if (!_cardAllowed(card, topCard, requiredCard)) return;
-
-//     final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-//     final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
-//     myHand.remove(card);
-//     hands[widget.myUid] = myHand;
-
-//     final players = _playersFromData(data);
-//     final opponent = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
-
-//     final cardNumber = int.tryParse(card.split('-')[1]) ?? 0;
-//     final updates = <String, dynamic>{
-//       'hands': hands,
-//       'topCard': card,
-//       'shapeInPlay': card.split('-')[0],
-//       'requiredCard': '',
-//       'pendingAction': null,
-//     };
-
-//     String nextTurn = opponent;
-
-//     // 🟥 --- APPLY NAIJA WHOT RULES ---
-//     switch (cardNumber) {
-//       case 1: // Hold On
-//         nextTurn = widget.myUid; // player plays again
-//         break;
-
-//       case 2: // Pick Two
-//         // opponent's turn but only to pick 2
-//         nextTurn = opponent;
-//         updates['pendingAction'] = {
-//           'type': 'pick',
-//           'count': 2,
-//           'from': widget.myUid,
-//         };
-//         break;
-
-//       case 8: // Suspension
-//         // skip opponent
-//         nextTurn = widget.myUid;
-//         break;
-
-//       case 14: // General Market
-//         // opponent's turn but only to pick 1
-//         nextTurn = opponent;
-//         updates['pendingAction'] = {
-//           'type': 'pick',
-//           'count': 1,
-//           'from': widget.myUid,
-//         };
-//         break;
-//     }
-
-//     updates['turn'] = nextTurn;
-//     tx.update(gameRef, updates);
-//   });
-
-
-// }
 
 Future<void> playCard(String rawCard) async {
   final card = _normalizeCard(rawCard);
@@ -577,12 +281,6 @@ Future<void> playCard(String rawCard) async {
     tx.update(gameRef, updates);
   });
 }
-
-
-
-
-
-
 
 
 Future<void> playCardss(String rawCard) async {
@@ -793,33 +491,6 @@ Future<void> playCardss(String rawCard) async {
 }
 
 
-  // Future<void> pickCard(String playerId) async {
-  //   final ref = _firestore.collection('games').doc(widget.gameId);
-  //   await _firestore.runTransaction((tx) async {
-  //     final snap = await tx.get(ref);
-  //     if (!snap.exists) return;
-  //     final data = snap.data() ?? {};
-  //     final turn = data['turn'];
-  //     if (turn != playerId) return;
-
-  //     final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-  //     final myHand = List<String>.from((hands[playerId] ?? []).map(_normalizeCard));
-
-  //     List<String> deck = [];
-  //     if (data['deck'] is List) deck = (data['deck'] as List).map<String>(_normalizeCard).toList();
-  //     if (deck.isEmpty) return;
-
-  //     final newCard = deck.removeLast();
-  //     myHand.insert(0, newCard); // insert to front
-  //     hands[playerId] = myHand;
-
-  //     final players = _playersFromData(data);
-  //     final next = players.firstWhere((p) => p != playerId, orElse: () => playerId);
-
-  //     tx.update(ref, {'deck': deck, 'hands': hands, 'turn': next});
-  //   });
-  // }
-
   Widget _cardWidget(String card, {bool playable = true, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -898,20 +569,7 @@ Future<void> playCardss(String rawCard) async {
           final opponentHand = List<String>.from((hands[opponentId] ?? []).map(_normalizeCard));
 
           // WIN CHECK
-          // if (!_winDialogShown) {
-          //   if (myHand.isEmpty) {
-          //     Future.microtask(() => _showWinDialog(myUid));
-          //   } else if (opponentId.isNotEmpty && opponentHand.isEmpty) {
-          //     Future.microtask(() => _showWinDialog(opponentId));
-          //   }
-          // }
-
-          // ✅ SAFE WIN CHECK FIX
 final handsExist = hands.isNotEmpty && hands[widget.myUid] != null && hands[opponentId] != null;
-
-// Ensure the game has actually started — topCard must exist and deck must not be empty
-//final bool gameStarted = (topCard != null && topCard.toString().isNotEmpty && deck.isNotEmpty);
-//if (gameStarted && handsExist && !_winDialogShown) {
 
 if ( handsExist && !_winDialogShown) {
   if (myHand.isEmpty) {
@@ -927,6 +585,13 @@ if ( handsExist && !_winDialogShown) {
           final deck = (data['deck'] is List)
               ? (data['deck'] as List).map<String>(_normalizeCard).toList()
               : [];
+
+          // --- NEW: read pendingAction and compute blocked state ---
+          final pending = data['pendingAction'];
+          final bool hasPendingForcePick = pending != null && pending['type'] == 'force_pick';
+          final bool blockedByForcedPick = hasPendingForcePick && pending['target'] == myUid;
+          final int forcedPickCount = (pending != null && pending['count'] != null) ? (pending['count'] as int) : 0;
+          // -------------------------------------------------------
 
           final isMyTurn = currentTurn == myUid;
           final myHandPlayability = myHand.map((c) => _cardAllowed(c, topCard, requiredCard)).toList();
@@ -979,6 +644,7 @@ if ( handsExist && !_winDialogShown) {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         GestureDetector(
+                          // allow picking if it's my turn OR if I'm the forced target (my turn will also be set to me in the current logic)
                           onTap: isMyTurn ? () => pickCard(myUid) : null,
                           child: Stack(
                             alignment: Alignment.center,
@@ -999,6 +665,15 @@ if ( handsExist && !_winDialogShown) {
                       ],
                     ),
                     const SizedBox(height: 10),
+                    // show forced-pick hint when blocked
+                    if (blockedByForcedPick)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Text(
+                          "You must pick $forcedPickCount card${forcedPickCount > 1 ? 's' : ''} from MARKET",
+                          style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     Text(isMyTurn ? "Your Turn" : "Opponent's Turn", style: TextStyle(color: isMyTurn ? Colors.lightGreenAccent : Colors.white, fontSize: 16)),
                   ],
                 ),
@@ -1010,7 +685,9 @@ if ( handsExist && !_winDialogShown) {
                   child: Row(
                     children: List.generate(myHand.length, (i) {
                       final c = myHand[i];
-                      final playable = myHandPlayability[i] && isMyTurn;
+                      // IMPORTANT: prevent card play when blocked by forced pick
+                      final playable = myHandPlayability[i] && isMyTurn && !blockedByForcedPick;
+
                       return _cardWidget(c, playable: playable, onTap: playable ? () => playCard(c) : null);
                     }),
                   ),
