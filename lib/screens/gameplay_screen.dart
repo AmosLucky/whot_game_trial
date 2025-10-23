@@ -2,6 +2,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:naija_whot_trail/services/game_service.dart';
+import 'package:naija_whot_trail/services/lobby_service.dart';
 
 class GamePlayScreen extends StatefulWidget {
   final String gameId;
@@ -30,6 +32,8 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
   void initState() {
     super.initState();
     _gameStream = _firestore.collection('games').doc(widget.gameId).snapshots();
+    LobbyService _lobbyService = LobbyService();
+   _lobbyService.removePlayerFromLobby(widget.myUid);
   }
 
   String _normalizeCard(dynamic raw) {
@@ -426,7 +430,17 @@ Future<void> playCardss(String rawCard) async {
 
     List<String> deck = [];
     if (data['deck'] is List) deck = (data['deck'] as List).map<String>(_normalizeCard).toList();
+    ///market is empty
+   
     if (deck.isEmpty) return;
+
+    ///deck remain one 
+     if(deck.length == 1){
+     LobbyService  _lobbyService = LobbyService();
+     _lobbyService.createNewDeck(widget.gameId);
+      
+     }
+   
 
     final pending = data['pendingAction'];
     if (pending != null && pending['type'] == 'force_pick' && pending['target'] == playerId) {

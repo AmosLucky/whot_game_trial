@@ -13,11 +13,124 @@ class LobbyService {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+  Future<String?> findMatchAndStartGame(String myUid) async {
+  final lobbyRef = FirebaseFirestore.instance.collection('lobby');
+  final gamesRef = FirebaseFirestore.instance.collection('games');
+
+  return await  FirebaseFirestore.instance.runTransaction((transaction) async {
+    // 1️⃣ Check if this user is already in a game or waiting
+    final existingLobbySnap = await transaction.get(lobbyRef.doc(myUid));
+    if (existingLobbySnap.exists) {
+      throw Exception('You are already waiting or in a game.');
+    }
+
+    // 2️⃣ Search for a waiting player (not you)
+    final waitingSnapshot = await lobbyRef
+        .where('status', isEqualTo: 'waiting')
+        .limit(1)
+        .get();
+
+    if (waitingSnapshot.docs.isEmpty) {
+      // 🟡 No waiting player → add yourself as waiting
+      transaction.set(lobbyRef.doc(myUid), {
+        'uid': myUid,
+        'status': 'waiting',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      return null;
+    }
+
+    // 3️⃣ Found a waiting player
+    final waitingPlayer = waitingSnapshot.docs.first;
+    final waitingUid = waitingPlayer['uid'];
+
+    // Prevent same user double-match
+    if (waitingUid == myUid) {
+      throw Exception('You are already waiting.');
+    }
+
+    // 4️⃣ Create a new game safely
+    final gameDoc = gamesRef.doc();
+    transaction.set(gameDoc, {
+      'players': [myUid, waitingUid],
+      'status': 'active',
+      'turn': myUid,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // 5️⃣ Remove both players from lobby
+    transaction.delete(lobbyRef.doc(myUid));
+    transaction.delete(waitingPlayer.reference);
+     await initializeGameCards(gameDoc.id, [myUid, waitingUid]);
+
+      return gameDoc.id;
+  });
+
+  
+  
+}
+
+
+//   Future<String?> findMatchAndStartGame(String myUid) async {
+//     print("1");
+//   final lobbyRef = FirebaseFirestore.instance.collection('lobby');
+//   final gamesRef = FirebaseFirestore.instance.collection('games');
+//     print("2");
+
+//   return FirebaseFirestore.instance.runTransaction((transaction) async {
+//     // Step 1: Find one other waiting player (not me)
+//     final waitingPlayers = await lobbyRef
+//         .where('status', isEqualTo: 'waiting')
+//         .limit(1)
+//         .get();
+
+//     if (waitingPlayers.docs.isEmpty) {
+//       // No one waiting — add me to lobby
+//       transaction.set(lobbyRef.doc(myUid), {
+//         'uid': myUid,
+//         'status': 'waiting',
+//         'gameId': null,
+//         'timestamp': FieldValue.serverTimestamp(),
+//       });
+//       return null; // wait for opponent
+//     } else {
+//       // Found someone waiting
+//       final opponentDoc = waitingPlayers.docs.first;
+//       final opponentUid = opponentDoc.id;
+
+//       // Step 2: Create a new game document
+//       final newGameRef = gamesRef.doc();
+//       transaction.set(newGameRef, {
+//         'gameId': newGameRef.id,
+//         'players': [myUid, opponentUid],
+//         'status': 'active',
+//         'createdAt': FieldValue.serverTimestamp(),
+//       });
+
+//       // Step 3: Update both lobby records
+//       transaction.update(lobbyRef.doc(opponentUid), {
+//         'status': 'matched',
+//         'gameId': newGameRef.id,
+//       });
+//       transaction.set(lobbyRef.doc(myUid), {
+//         'status': 'matched',
+//         'gameId': newGameRef.id,
+//         'timestamp': FieldValue.serverTimestamp(),
+//       });
+
+//       // initialize deck and hands
+//       await initializeGameCards(newGameRef.id, [myUid, opponentUid]);
+
+//       return newGameRef.id;
+//     }
+//   });
+// }
+
 
   /// Remove player from lobby list
   Future<void> removePlayerFromLobby(String uid) async {
     await _firestore.collection('lobby').doc(uid).delete().catchError((_) {});
-    await updatePlayerStatus(uid, 'offline');
+   // await updatePlayerStatus(uid, 'offline');
   }
 
   /// Add player to lobby and mark as waiting
@@ -30,39 +143,115 @@ class LobbyService {
   }
 
   /// Try to match players in lobby
-  Future<String?> tryMatchPlayers(String myUid) async {
-    final lobbySnapshot = await _firestore.collection('lobby').get();
-    final waitingPlayers = lobbySnapshot.docs.map((e) => e.id).toList();
+ 
+Future<String?> tryMatchPlayers(String myUid) async {
+  final firestore = FirebaseFirestore.instance;
+  final lobbyRef = firestore.collection('lobby');
+  final usersRef = firestore.collection('users');
+  final gamesRef = firestore.collection('games');
 
-    final opponent = waitingPlayers.firstWhere(
-      (uid) => uid != myUid,
-      orElse: () => '',
-    );
+  // ✅ Step 1: Put player in lobby if not there
+  final myLobbyDoc = await lobbyRef.doc(myUid).get();
+  //if (!myLobbyDoc.exists) {
+    await lobbyRef.doc(myUid).set({
+      'joinedAt': FieldValue.serverTimestamp(),
+      'status':'waiting',
+      "id":myUid
+    });
+  //}
 
-    if (opponent.isNotEmpty) {
-      final gameDoc = await _firestore.collection('games').add({
-        'players': [myUid, opponent],
-        'turn': myUid,
-        'status': 'active',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+  //  final waitingQuery = await lobbyRef
+  //     .where('status', isEqualTo: 'waiting')
+  //     .limit(1)
+  //     .get();
+  
 
-      // remove from lobby
-      await _firestore.collection('lobby').doc(myUid).delete();
-      await _firestore.collection('lobby').doc(opponent).delete();
+  // ✅ Step 2: Fetch all waiting players (excluding me)
+  final lobbySnapshot = await lobbyRef.where('status', isEqualTo: 'waiting').get();
+  final waitingPlayers =
+      lobbySnapshot.docs.map((e) => e.id).where((id) => id != myUid).toList();
 
-      // update status
-      await updatePlayerStatus(myUid, 'in_game');
-      await updatePlayerStatus(opponent, 'in_game');
-
-      // initialize deck and hands
-      await initializeGameCards(gameDoc.id, [myUid, opponent]);
-
-      return gameDoc.id;
-    }
-
+  if (waitingPlayers.isEmpty) {
+    print('⏳ No opponent yet, waiting...');
     return null;
   }
+
+  // ✅ Step 3: Pick first opponent
+  final opponentUid = waitingPlayers.first;
+
+  // ✅ Step 4: Use Firestore transaction for perfect atomic safety
+  return await firestore.runTransaction((transaction) async {
+    final myLobbySnap = await transaction.get(lobbyRef.doc(myUid));
+    final oppLobbySnap = await transaction.get(lobbyRef.doc(opponentUid));
+
+    // 🧩 Ensure both still in lobby (avoid stale reads)
+    if (!myLobbySnap.exists || !oppLobbySnap.exists) {
+      print('❌ One player already matched.');
+      return null;
+    }
+
+    // ✅ Step 5: Double-check neither player is already in a game
+    final myUserSnap = await transaction.get(usersRef.doc(myUid));
+    final oppUserSnap = await transaction.get(usersRef.doc(opponentUid));
+
+    final myData = myUserSnap.data() ?? {};
+    final oppData = oppUserSnap.data() ?? {};
+
+    // if ((myData['status'] == 'in_game') || (oppData['status'] == 'in_game')) {
+    //   print('⚠️ One player is already in another game.');
+    //   return null;
+    // }
+
+    // ✅ Step 6: Create NEW game (always fresh)
+    final gameRef = gamesRef.doc();
+    transaction.set(gameRef, {
+      'players': [myUid, opponentUid],
+      'turn': myUid,
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    //Added step ///update the players Lobby
+   
+
+
+    // ✅ Step 7: Remove both from lobby inside the same transaction
+    // transaction.delete(lobbyRef.doc(myUid));
+    // transaction.delete(lobbyRef.doc(opponentUid));
+
+    // ✅ Step 8: Update both users to "in_game"
+    // transaction.update(usersRef.doc(myUid), {
+    //   'status': 'in_game',
+    //   'currentGame': gameRef.id,
+    // });
+    // transaction.update(usersRef.doc(opponentUid), {
+    //   'status': 'in_game',
+    //   'currentGame': gameRef.id,
+    // });
+
+    print('🎮 New Game Created: ${gameRef.id} between $myUid and $opponentUid');
+    return gameRef.id;
+  }).then((gameId) async {
+   // if (gameId != null) {
+      // Initialize deck AFTER transaction succeeds
+      await initializeGameCards(gameId!, [myUid, opponentUid]);
+   // }
+    await lobbyRef
+    .doc(myUid)
+    .update({'status': 'matched', 'gameId': gameId});
+
+await lobbyRef
+    .doc(opponentUid)
+    .update({'status': 'matched', 'gameId': gameId});
+    return gameId;
+  });
+}
+
+
+
+
+
+
+
 
   /// Initialize Whot deck, deal 5 cards to each player, set table card and deck
   Future<void> initializeGameCards(String gameId, List<String> players) async {
@@ -109,6 +298,16 @@ List<Map<String, dynamic>> _generateWhotDeck() {
   // selectedDeck.add({'shape': 'whot', 'number': 20});
 
   return selectedDeck;
+}
+
+createNewDeck(String gameId)async{
+  final allCards = _generateWhotDeck();
+  allCards.shuffle();
+
+   await _firestore.collection('games').doc(gameId).update({
+      
+      'deck': allCards,
+   });
 }
 
 
