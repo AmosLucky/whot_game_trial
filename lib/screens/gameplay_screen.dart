@@ -435,9 +435,9 @@ Future<void> playCardss(String rawCard) async {
     if (deck.isEmpty) return;
 
     ///deck remain one 
-     if(deck.length == 1){
-     LobbyService  _lobbyService = LobbyService();
-     _lobbyService.createNewDeck(widget.gameId);
+     if(deck.length == 2){
+     LobbyService  lobbyService = LobbyService();
+     lobbyService.createNewDeck(widget.gameId);
       
      }
    
@@ -508,24 +508,62 @@ Future<void> playCardss(String rawCard) async {
   Widget _cardWidget(String card, {bool playable = true, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        width: 72,
-        height: 100,
-        decoration: BoxDecoration(
-          color: playable ? Colors.white : Colors.grey.shade700,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: playable ? Colors.yellow : Colors.black26, width: 2),
-        ),
-        child: Center(
-          child: Text(
-            card.toUpperCase(),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      child: showCard( card)
+      // child: Container(
+
+      //  // margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      //   width: 72,
+      //   height: 100,
+      //   decoration: BoxDecoration(
+      //     image: DecorationImage(image: AssetImage(GameService().showCardImage(card)),
+      //     fit: BoxFit.cover, repeat: ImageRepeat.repeat),
+      //     color: playable ? Colors.grey.shade700 : Colors.grey.shade700,
+      //     borderRadius: BorderRadius.circular(10),
+          
+      //     border: Border.all(color: playable ? Colors.yellow : Colors.black26, width: 2),
+      //   ),
+      //   child: Center(
+      //     child: Text(
+      //       card.toUpperCase(),
+      //       textAlign: TextAlign.center,
+      //       style: const TextStyle(fontWeight: FontWeight.bold),
+      //     ),
+      //   ),
+      // ),
     );
+  }
+
+  Widget showCard(String card){
+    return Container(
+        margin: EdgeInsets.symmetric(horizontal: 5),
+        height: 100,
+        width: 100,
+        color: Colors.black,
+        child: Stack(children: [
+
+          Image.asset(GameService().showCardImage(card), 
+          height: 100,
+        width: 100,fit: BoxFit.fill,),
+        Container(
+          margin: EdgeInsets.all(5),
+          child: 
+              Text(GameService().showCardNumber(card),style: TextStyle(color: Colors.white),)
+
+          
+        ),
+
+        Container(
+          alignment: Alignment.bottomRight,
+          margin: EdgeInsets.all(5),
+          child:
+              Text(GameService().showCardNumber(card),style: TextStyle(color: Colors.white),)
+
+          
+        )
+
+        ],),
+
+      );
   }
 
   Future<void> _showWinDialog(String winnerId) async {
@@ -663,8 +701,12 @@ if ( handsExist && !_winDialogShown) {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Container(width: 80, height: 120, decoration: BoxDecoration(color: Colors.blueGrey.shade700, borderRadius: BorderRadius.circular(12))),
-                              Text("MARKET\n(${deck.length})", textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              Container(width: 80, height: 120,
+                               decoration: BoxDecoration(color: Colors.blueGrey.shade700,
+                                borderRadius: BorderRadius.circular(12),image: DecorationImage(image: AssetImage("images/card_back.png")))),
+                              Text("MARKET\n(${deck.length})",
+                               textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -673,8 +715,34 @@ if ( handsExist && !_winDialogShown) {
                           width: 100,
                           height: 140,
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                          child: Text(topCard.isNotEmpty ? topCard.toUpperCase() : '-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          decoration: BoxDecoration(
+                            image: DecorationImage(image: AssetImage(GameService().showCardImage(topCard))),
+                            //color: Colors.white,
+                           borderRadius: BorderRadius.circular(12)),
+                          //child: Text(topCard.isNotEmpty ? topCard.toUpperCase() : '-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          child: Stack(children: [
+
+          Image.asset(GameService().showCardImage(topCard), 
+          height: 100,
+        width: 100,fit: BoxFit.fill,),
+        Container(
+          margin: EdgeInsets.all(5),
+          child: 
+              Text(GameService().showCardNumber(topCard),style: TextStyle(color: Colors.white),)
+
+          
+        ),
+
+        Container(
+          alignment: Alignment.bottomRight,
+          margin: EdgeInsets.all(5),
+          child:
+              Text(GameService().showCardNumber(topCard),style: TextStyle(color: Colors.white),)
+
+          
+        )
+
+        ],),
                         ),
                       ],
                     ),

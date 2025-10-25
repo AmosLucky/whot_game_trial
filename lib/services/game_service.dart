@@ -736,6 +736,29 @@ Future<String> createGame(List<String> players, String hostUid) async {
 }
 
 /// Builds a Whot deck with the standard Naija Whot cards.
+/// 
+/// 
+String showCardImage(String card){
+  //const List<String>  shapes = ['circle', 'cross', 'triangle', 'square'];
+  var Kcard = card.split("-");
+  String shape =  Kcard[0].toLowerCase();
+   var number = Kcard[1];
+   var shapeDir = "images/shapes/${shape}.png";
+   return shapeDir;
+   
+
+}
+
+String showCardNumber(String card){
+  //const List<String>  shapes = ['circle', 'cross', 'triangle', 'square'];
+  var Kcard = card.split("-");
+  String shape =  Kcard[0].toLowerCase();
+   var number = Kcard[1];
+   var shapeDir = "images/shapes/${shape}.png";
+   return number;
+   
+
+}
 
 
 }
