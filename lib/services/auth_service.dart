@@ -10,20 +10,23 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
+import 'package:naija_whot_trail/services/local_service.dart';
 
 class AuthResult {
   final bool success;
   final String? message;
   final String? uid;
-  AuthResult({required this.success, this.message, this.uid});
+  final DocumentSnapshot<Object?>? userSnapshot;
+  AuthResult({required this.success, this.message, this.uid,this.userSnapshot});
 }
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final LocalStorageService localStorage = LocalStorageService();
 
   final String mysqlSyncEndpoint;
-  AuthService({required this.mysqlSyncEndpoint});
+  AuthService({ this.mysqlSyncEndpoint = ""});
 
   /// ✅ Stream to listen for login/logout changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -75,12 +78,17 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      await _firestore.collection('users').doc(uid).set(userDoc);
+     await _firestore.collection('users').doc(uid).set(userDoc);
+     final docSnapshot = await _firestore.collection('users').doc(user.uid).get();
+     await localStorage.saveUserData({...userDoc,"password":password});
 
-      return AuthResult(success: true, uid: uid);
+ 
+
+      return AuthResult(success: true, uid: uid,userSnapshot: docSnapshot);
     } on FirebaseAuthException catch (e) {
       return AuthResult(success: false, message: e.message ?? 'Firebase error');
     } catch (e) {
+      print(e);
       return AuthResult(success: false, message: e.toString());
     }
   }
@@ -96,6 +104,7 @@ class AuthService {
         password: password,
       );
       final uid = cred.user?.uid;
+      final user = cred.user;
 
       if (uid != null) {
         await _firestore.collection('users').doc(uid).update({
@@ -103,14 +112,35 @@ class AuthService {
           'lastSeen': FieldValue.serverTimestamp(),
         });
       }
+           final docSnapshot = await _firestore.collection('users').doc(user!.uid).get();
+           await localStorage.saveUserData({...docSnapshot.data()!,"password":password});
 
-      return AuthResult(success: true, uid: uid);
+
+      return AuthResult(success: true, uid: uid,userSnapshot: docSnapshot);
     } on FirebaseAuthException catch (e) {
       return AuthResult(success: false, message: e.message ?? 'Login failed');
     } catch (e) {
       return AuthResult(success: false, message: e.toString());
     }
   }
+
+
+  // 🧩 Auto Login (check local first)
+  Future<AuthResult> autoLogin() async {
+    final userData = await localStorage.getUserData();
+    if (userData != null) {
+      // Check if FirebaseAuth still has session
+    AuthResult authResult = await  signInWithEmail(email: userData['email'], password: userData['password']);
+    return authResult;
+     
+      } else {
+        // Local data exists but no Firebase session, clear
+        await localStorage.clearUserData();
+      }
+       return AuthResult(success: false,message: "");
+    }
+   
+  
 
   /// ✅ Logout user and mark offline
   Future<void> logout() async {
@@ -121,6 +151,7 @@ class AuthService {
         'lastSeen': FieldValue.serverTimestamp(),
       });
     }
+    await localStorage.clearUserData();
     await _auth.signOut();
   }
 
