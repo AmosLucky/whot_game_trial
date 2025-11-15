@@ -743,7 +743,7 @@ String showCardImage(String card){
   var Kcard = card.split("-");
   String shape =  Kcard[0].toLowerCase();
    var number = Kcard[1];
-   var shapeDir = "images/shapes/${shape}.png";
+   var shapeDir = "images/shapes/${shape}.jpeg";
    return shapeDir;
    
 
@@ -754,7 +754,7 @@ String showCardNumber(String card){
   var Kcard = card.split("-");
   String shape =  Kcard[0].toLowerCase();
    var number = Kcard[1];
-   var shapeDir = "images/shapes/${shape}.png";
+   var shapeDir = "assets/images/shapes/${shape}.jpeg";
    return number;
    
 

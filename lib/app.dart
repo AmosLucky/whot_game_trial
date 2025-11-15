@@ -15,8 +15,7 @@ class NaijaWhotApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-   final authService = AuthService(mysqlSyncEndpoint: "");
-   final lobbyService =  LobbyService();
+  
 
     return MaterialApp(
       routes: {
@@ -26,7 +25,9 @@ class NaijaWhotApp extends StatelessWidget {
           ///authService: authService
           ),
         '/login': (context) => LoginScreen(),
-        '/home': (context) =>  HomeScreen(lobbyService: lobbyService,authService: authService,),
+        '/home': (context) =>  HomeScreen(
+        
+        ),
       },
       title: 'Naija Whot',
       debugShowCheckedModeBanner: false,

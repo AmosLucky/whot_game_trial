@@ -99,6 +99,7 @@ class AuthService {
     required String password,
   }) async {
     try {
+      print("ojete34555");
       final cred = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -120,6 +121,7 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       return AuthResult(success: false, message: e.message ?? 'Login failed');
     } catch (e) {
+      
       return AuthResult(success: false, message: e.toString());
     }
   }
@@ -127,16 +129,20 @@ class AuthService {
 
   // 🧩 Auto Login (check local first)
   Future<AuthResult> autoLogin() async {
+   
     final userData = await localStorage.getUserData();
     if (userData != null) {
+       
       // Check if FirebaseAuth still has session
     AuthResult authResult = await  signInWithEmail(email: userData['email'], password: userData['password']);
+   
     return authResult;
      
       } else {
         // Local data exists but no Firebase session, clear
         await localStorage.clearUserData();
       }
+       
        return AuthResult(success: false,message: "");
     }
    

@@ -45,6 +45,7 @@ dependencies:
   animated_text_kit: ^4.2.2
   flutter_riverpod:
   shared_preferences:
+  flutter_paystack:
 
 dev_dependencies:
   flutter_test:

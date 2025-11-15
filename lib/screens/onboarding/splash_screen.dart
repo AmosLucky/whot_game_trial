@@ -94,7 +94,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ],
                 ),
                 child: Image.asset(
-                  'assets/logo.png',
+                  'assets/images/logo.png',
                   height: 120,
                 ),
               ),

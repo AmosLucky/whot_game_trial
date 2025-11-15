@@ -54,7 +54,9 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final response = await _authService.signInWithEmail(email: email, password: password);
 
-      if (response.success == true) {
+      if (response.success) {
+         print("000000000000000000");
+        print(AppUser.fromDoc(response.userSnapshot!));
         state = state.copyWith(isLoading: false,
         isSuccess: true, 
         user: AppUser.fromDoc(response.userSnapshot!));
@@ -69,21 +71,30 @@ class AuthController extends StateNotifier<AuthState> {
 
 
   Future autoLogin()async{
-    print("object------------");
+    
     state = state.copyWith(isLoading: true, error: null);
+    
     try {
+      
       final response = await _authService.autoLogin();
+      
 
       if (response.success) {
-        state = state.copyWith(isLoading: false,
+        print("000000000000000000");
+        print(AppUser.fromDoc(response.userSnapshot!));
+        
+        state = state.copyWith(
+        isLoading: false,
         isSuccess: true, 
         isFailure: false,
         user: AppUser.fromDoc(response.userSnapshot!));
       } else {
+         
         state = state.copyWith(
             isLoading: false, isSuccess: false, isFailure:true, error: response.message ?? 'Login failed');
       }
     } catch (e) {
+      
       state = state.copyWith(isLoading: false, isFailure:true, error: e.toString());
     }
 
@@ -94,6 +105,6 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   void reset() {
-    state = const AuthState();
+    //state = state.copyWith(isFailure: false,isLoading: false,isSuccess: false,);
   }
 }

@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../constants/app_constant.dart';
+
 class LobbyService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -145,6 +147,7 @@ class LobbyService {
   /// Try to match players in lobby
  
 Future<String?> tryMatchPlayers(String myUid) async {
+  print("09000");
   final firestore = FirebaseFirestore.instance;
   final lobbyRef = firestore.collection('lobby');
   final usersRef = firestore.collection('users');
@@ -175,6 +178,7 @@ Future<String?> tryMatchPlayers(String myUid) async {
     print('⏳ No opponent yet, waiting...');
     return null;
   }
+  
 
   // ✅ Step 3: Pick first opponent
   final opponentUid = waitingPlayers.first;
@@ -190,9 +194,17 @@ Future<String?> tryMatchPlayers(String myUid) async {
       return null;
     }
 
+    
+
     // ✅ Step 5: Double-check neither player is already in a game
     final myUserSnap = await transaction.get(usersRef.doc(myUid));
     final oppUserSnap = await transaction.get(usersRef.doc(opponentUid));
+
+    //check balance
+  //   if (myUserSnap['balance'] < minPayment || oppUserSnap['balance'] < minPayment) {
+  //    print('❌ One player Insufficient Balnce.');
+  //     return null;
+  // }
 
     final myData = myUserSnap.data() ?? {};
     final oppData = oppUserSnap.data() ?? {};
@@ -211,6 +223,15 @@ Future<String?> tryMatchPlayers(String myUid) async {
       'createdAt': FieldValue.serverTimestamp(),
     });
     //Added step ///update the players Lobby
+
+
+         transaction
+    .set(lobbyRef.doc(myUid),{'status': 'matched', 'gameId': gameRef.id});
+      transaction
+    .set(lobbyRef.doc(opponentUid),{'status': 'matched', 'gameId': gameRef.id});
+   
+
+
    
 
 
@@ -218,15 +239,14 @@ Future<String?> tryMatchPlayers(String myUid) async {
     // transaction.delete(lobbyRef.doc(myUid));
     // transaction.delete(lobbyRef.doc(opponentUid));
 
-    // ✅ Step 8: Update both users to "in_game"
-    // transaction.update(usersRef.doc(myUid), {
-    //   'status': 'in_game',
-    //   'currentGame': gameRef.id,
-    // });
-    // transaction.update(usersRef.doc(opponentUid), {
-    //   'status': 'in_game',
-    //   'currentGame': gameRef.id,
-    // });
+    // ✅ Step 8: Update both users balance to "- minPayment"
+    transaction.update(usersRef.doc(myUid), {
+      'balance': myUserSnap['balance'] - minPayment,
+      
+    });
+    transaction.update(usersRef.doc(opponentUid), {
+      'balance': oppUserSnap['balance'] - minPayment,
+    });
 
     print('🎮 New Game Created: ${gameRef.id} between $myUid and $opponentUid');
     return gameRef.id;
@@ -235,13 +255,13 @@ Future<String?> tryMatchPlayers(String myUid) async {
       // Initialize deck AFTER transaction succeeds
       await initializeGameCards(gameId!, [myUid, opponentUid]);
    // }
-    await lobbyRef
-    .doc(myUid)
-    .update({'status': 'matched', 'gameId': gameId});
+//     await lobbyRef
+//     .doc(myUid)
+//     .update({'status': 'matched', 'gameId': gameId});
 
-await lobbyRef
-    .doc(opponentUid)
-    .update({'status': 'matched', 'gameId': gameId});
+// await lobbyRef
+//     .doc(opponentUid)
+//     .update({'status': 'matched', 'gameId': gameId});
     return gameId;
   });
 }
@@ -309,6 +329,14 @@ createNewDeck(String gameId)async{
       'deck': allCards,
    });
 }
+
+Future<void> removeFromLobby(String userId) async {
+  final lobbyRef =FirebaseFirestore.instance.collection("lobby").doc(userId);
+  await lobbyRef.delete();
+}
+
+
+
 
 
 

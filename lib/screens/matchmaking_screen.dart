@@ -266,7 +266,7 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
           builder: (_) => GamePlayScreen(
             gameId: gameId,
             myUid: myUid!,
-            myBalance: updatedBalance,
+           
           ),
         ),
       );
