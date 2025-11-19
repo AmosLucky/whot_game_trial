@@ -1,12 +1,18 @@
 // lib/screens/gameplay_screen.dart
 
+import 'dart:io';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:naija_whot_trail/services/game_service.dart';
 import 'package:naija_whot_trail/services/lobby_service.dart';
 
 import '../providers/providers.dart';
+import '../services/sound_service.dart';
 import '../widgets/image_background.dart';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
@@ -30,14 +36,36 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   late final Stream<DocumentSnapshot<Map<String, dynamic>>> _gameStream;
   bool _initializing = false;
   bool _winDialogShown = false; // prevent multiple dialogs
-  
+  // bool isReady = false;
+
+  SoundService _soundService = SoundService();
 
   @override
   void initState() {
+   _soundService.playBackground();
+    
+    
     super.initState();
-    _gameStream = _firestore.collection('games').doc(widget.gameId).snapshots();
+    
+
+     
+
+    // Force landscape on mobile only
+    // if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    //   SystemChrome.setPreferredOrientations([
+    //     DeviceOrientation.landscapeLeft,
+    //     DeviceOrientation.landscapeRight,
+    //   ]);
+    // }  
+    try{
+       _gameStream = _firestore.collection('games').doc(widget.gameId).snapshots();
     LobbyService _lobbyService = LobbyService();
    _lobbyService.removePlayerFromLobby(widget.myUid);
+
+    }catch(e){
+      print(e);
+    }
+   
   }
 
   String _normalizeCard(dynamic raw) {
@@ -141,6 +169,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   }
 
 Future<void> playCard(String rawCard) async {
+ // print(myHand);
+
+
+
+  _soundService.playEffect("merge.mp3");
+
   final card = _normalizeCard(rawCard);
   final gameRef = _firestore.collection('games').doc(widget.gameId);
 
@@ -421,6 +455,7 @@ Future<void> playCardss(String rawCard) async {
     return chosen;
   }
   Future<void> pickCard(String playerId) async {
+      _soundService.playEffect("merge.mp3");
   final ref = _firestore.collection('games').doc(widget.gameId);
   await _firestore.runTransaction((tx) async {
     final snap = await tx.get(ref);
@@ -512,7 +547,7 @@ Future<void> playCardss(String rawCard) async {
   Widget _cardWidget(String card, {bool playable = true, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: showCard( card)
+      child: showCard( card,playable)
       // child: Container(
 
       //  // margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -537,18 +572,25 @@ Future<void> playCardss(String rawCard) async {
     );
   }
 
-  Widget showCard(String card){
+  Widget showCard(String card, bool playable){
     return Container(
         margin: EdgeInsets.symmetric(horizontal: 5),
         height: 100,
         width: 100,
-        color: Colors.black,
+        //color: Colors.black,
+        decoration: BoxDecoration(
+          border: Border.all(
+            width:  playable ?3:0,
+            color:  playable ? Colors.red : Colors.grey.shade700,
+          )
+        ),
         child: Stack(children: [
 
           Image.asset(GameService().showCardImage(card), 
           height: 100,
         width: 100,fit: BoxFit.fill,),
         Container(
+          
           margin: EdgeInsets.all(5),
           child: 
               Text(GameService().showCardNumber(card),style: TextStyle(color: Colors.black),)
@@ -606,8 +648,8 @@ Future<void> playCardss(String rawCard) async {
               if (winnerId == widget.myUid)
                 Image.asset(
                   "assets/images/win.webp",
-                  width: 140,
-                  height: 140,
+                  width: 100,
+                  height: 100,
                 ),
 
               const SizedBox(height: 15),
@@ -690,217 +732,364 @@ Future<void> playCardss(String rawCard) async {
   }
 
   @override
+  void dispose() {
+    SoundService().stopBackground();
+    // Restore portrait when exiting
+   
+    super.dispose();
+  }
+
+
+
+    Future<bool> showExitMatchDialog(BuildContext context) async {
+  return await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        backgroundColor: const Color(0xFF5B2020),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 60),
+
+              SizedBox(height: 15),
+
+              Text(
+                "Cancel Game?",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              SizedBox(height: 10),
+
+              Text(
+                "Do you want to quit this game?",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+              ),
+
+              SizedBox(height: 25),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Cancel button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white24,
+                      padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      "No",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+
+                  // Confirm button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: () {
+                          if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+
+
+                     
+                       Navigator.pushReplacementNamed(context, '/home');
+
+                       
+                    },
+                    child: Text(
+                      "Yes, Exit",
+                      style: TextStyle(
+                        color: Color(0xFF5B2020),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+  @override
   Widget build(BuildContext context) {
+    
     final authState = ref.read(authControllerProvider);
+    final orientation = MediaQuery.of(context).orientation;
     return PopScope(
       canPop: false,
+      onPopInvokedWithResult: (b,c){
+
+        showExitMatchDialog(context);
+
+
+      },
       child: Scaffold(
-        appBar: AppBar(
+        appBar: orientation == Orientation.portrait? 
+        AppBar(
+          automaticallyImplyLeading: false,
           actions: [
-            Container(
-              margin: EdgeInsets.all(10),
-              child: Icon(Icons.settings,color: Colors.white,))
+            // Container(
+            //   margin: EdgeInsets.all(10),
+            //   child: Icon(Icons.settings,color: Colors.white,))
           ],
-        ),
-        //backgroundColor: Colors.green.shade900,
+        ):null,
+        backgroundColor: Colors.green.shade900,
         body: ImageBackground(
           image: "assets/images/bg_3.jpg",
-          child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: _gameStream,
-            builder: (context, snap) {
-              if (snap.hasError) {
-                return Center(child: Text('Error: ${snap.error}', 
-                style: const TextStyle(color: Colors.white)));
+          child:
+          Container(
+              alignment: Alignment.center,
+              child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: _gameStream,
+                builder: (context, snap) {
+                  if (snap.hasError) {
+                    return Center(child: Text('Error: ${snap.error}', 
+                    style: const TextStyle(color: Colors.white)));
+                  }
+                  if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+              
+                  final doc = snap.data!;
+                
+              
+                  final data = doc.data() ?? {};
+                 if (data.isEmpty) return const Center(child: CircularProgressIndicator());
+              
+                  _transactionalInitIfNeeded();
+              
+                  final players = _playersFromData(data);
+                  if (players.isEmpty || players.length < 2) {
+                    return const Center(child: Text('Waiting for opponent...', style: TextStyle(color: Colors.white)));
+                  }
+              
+                  final myUid = widget.myUid;
+                  final opponentId = players.firstWhere((p) => p != myUid, orElse: () => '');
+                  final hands = Map<String, dynamic>.from(data['hands'] ?? {});
+                  final myHand = List<String>.from((hands[myUid] ?? []).map(_normalizeCard));
+                  final opponentHand = List<String>.from((hands[opponentId] ?? []).map(_normalizeCard));
+              
+                  // WIN CHECK
+              final handsExist = hands.isNotEmpty && hands[widget.myUid] != null && hands[opponentId] != null;
+              
+              if ( handsExist && !_winDialogShown) {
+                if (myHand.isEmpty) {
+                  Future.microtask(() => _showWinDialog(widget.myUid, authState.user!.username));
+                } else if (opponentId.isNotEmpty && opponentHand.isEmpty) {
+                  Future.microtask(() => _showWinDialog(opponentId,authState.user!.username));
+                }
               }
-              if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-          
-              final doc = snap.data!;
-              final data = doc.data() ?? {};
-              _transactionalInitIfNeeded();
-          
-              final players = _playersFromData(data);
-              if (players.isEmpty) {
-                return const Center(child: Text('Waiting for opponent...', style: TextStyle(color: Colors.white)));
-              }
-          
-              final myUid = widget.myUid;
-              final opponentId = players.firstWhere((p) => p != myUid, orElse: () => '');
-              final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-              final myHand = List<String>.from((hands[myUid] ?? []).map(_normalizeCard));
-              final opponentHand = List<String>.from((hands[opponentId] ?? []).map(_normalizeCard));
-          
-              // WIN CHECK
-          final handsExist = hands.isNotEmpty && hands[widget.myUid] != null && hands[opponentId] != null;
-          
-          if ( handsExist && !_winDialogShown) {
-            if (myHand.isEmpty) {
-              Future.microtask(() => _showWinDialog(widget.myUid, authState.user!.username));
-            } else if (opponentId.isNotEmpty && opponentHand.isEmpty) {
-              Future.microtask(() => _showWinDialog(opponentId,authState.user!.username));
-            }
-          }
-          
-              final topCard = _normalizeCard(data['topCard']);
-              final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
-              final currentTurn = (data['turn'] ?? '').toString();
-              final deck = (data['deck'] is List)
-                  ? (data['deck'] as List).map<String>(_normalizeCard).toList()
-                  : [];
-          
-              // --- NEW: read pendingAction and compute blocked state ---
-              final pending = data['pendingAction'];
-              final bool hasPendingForcePick = pending != null && pending['type'] == 'force_pick';
-              final bool blockedByForcedPick = hasPendingForcePick && pending['target'] == myUid;
-              final int forcedPickCount = (pending != null && pending['count'] != null) ? (pending['count'] as int) : 0;
-              // -------------------------------------------------------
-          
-              final isMyTurn = currentTurn == myUid;
-              final myHandPlayability = myHand.map((c) => _cardAllowed(c, topCard, requiredCard)).toList();
-          
-              return SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Padding(
-                    //   padding: const EdgeInsets.all(12),
-                    //   child: Row(
-                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //     children: [
-                    //       Text(opponentId.isNotEmpty ? opponentId : 'Opponent', style: const TextStyle(color: Colors.white, fontSize: 16)),
-                    //       Text(myUid, style: const TextStyle(color: Colors.yellowAccent, fontSize: 16)),
-                    //     ],
-                    //   ),
-                    // ),
-          
-                    // Opponent
-                    Column(
+              
+                  final topCard = _normalizeCard(data['topCard']);
+                  final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
+                  final currentTurn = (data['turn'] ?? '').toString();
+                  final deck = (data['deck'] is List)
+                      ? (data['deck'] as List).map<String>(_normalizeCard).toList()
+                      : [];
+              
+                  // --- NEW: read pendingAction and compute blocked state ---
+                  final pending = data['pendingAction'];
+                  final bool hasPendingForcePick = pending != null && pending['type'] == 'force_pick';
+                  final bool blockedByForcedPick = hasPendingForcePick && pending['target'] == myUid;
+                  final int forcedPickCount = (pending != null && pending['count'] != null) ? (pending['count'] as int) : 0;
+                  // -------------------------------------------------------
+              
+                  final isMyTurn = currentTurn == myUid;
+                  final myHandPlayability = myHand.map((c) => _cardAllowed(c, topCard, requiredCard)).toList();
+              
+                  return SafeArea(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Opponent (${opponentHand.length} cards)", style: const TextStyle(color: Colors.white)),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            opponentHand.length,
-                            (i) => Container(
-                              margin: const EdgeInsets.all(2),
-                              width: 36,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                
-                                color: Colors.grey.shade700,
-                                borderRadius: BorderRadius.circular(12),image: DecorationImage(image: AssetImage("assets/images/card_back.jpeg")),
-          
-                               ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-          
-                    // Center cards + info
-                    Column(
-                      children: [
-                        Text(topCard.isNotEmpty ? "Top: ${topCard.toUpperCase()}" : "Top: -", 
-                        style: const TextStyle(color: Colors.yellow, fontSize: 18)),
-                        if (requiredCard.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
-                            child: Text("Required: ${requiredCard.toUpperCase()}", 
-                            style: const TextStyle(color: Colors.redAccent)),
-                          ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        // Padding(
+                        //   padding: const EdgeInsets.all(12),
+                        //   child: Row(
+                        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //     children: [
+                        //       Text(opponentId.isNotEmpty ? opponentId : 'Opponent', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                        //       Text(myUid, style: const TextStyle(color: Colors.yellowAccent, fontSize: 16)),
+                        //     ],
+                        //   ),
+                        // ),
+              
+                        // Opponent
+                        Column(
                           children: [
-                            GestureDetector(
-                              // allow picking if it's my turn OR if I'm the forced target (my turn will also be set to me in the current logic)
-                              onTap: isMyTurn ? () => pickCard(myUid) : null,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(width: 80, height: 120,
-                                   decoration: BoxDecoration(color: Colors.blueGrey.shade700,
-                                    borderRadius: BorderRadius.circular(12),image: DecorationImage(image: AssetImage("assets/images/card_back.jpeg")))),
-                                  Text("MARKET\n(${deck.length})",
-                                   textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                ],
+                            Text("Opponent (${opponentHand.length} cards)", style: const TextStyle(color: Colors.white)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                opponentHand.length,
+                                (i) => Container(
+                                  margin: const EdgeInsets.all(2),
+                                  width: 36,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    
+                                    color: Colors.grey.shade700,
+                                    borderRadius: BorderRadius.circular(12),image: DecorationImage(image: AssetImage("assets/images/card_back.jpeg")),
+              
+                                   ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 20),
-                            Container(
-                              width: 100,
-                              height: 140,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(image: AssetImage(GameService().showCardImage(topCard))),
-                                //color: Colors.white,
-                               borderRadius: BorderRadius.circular(12)),
-                              //child: Text(topCard.isNotEmpty ? topCard.toUpperCase() : '-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                              child: Stack(children: [
-          
-              Image.asset(GameService().showCardImage(topCard), 
-              height: 100,
-            width: 100,fit: BoxFit.fill,),
-            Container(
-              margin: EdgeInsets.all(5),
-              child: 
-                  Text(GameService().showCardNumber(topCard),
-                  style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold)
-                  )
-          
-              
-            ),
-          
-            Container(
-              alignment: Alignment.bottomRight,
-              margin: EdgeInsets.all(5),
-              child:
-                  Text(GameService().showCardNumber(topCard),
-                  style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold),)
-          
-              
-            )
-          
-            ],),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        // show forced-pick hint when blocked
-                        if (blockedByForcedPick)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Text(
-                              "You must pick $forcedPickCount card${forcedPickCount > 1 ? 's' : ''} from MARKET",
-                              style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold),
+              
+                        // Center cards + info
+                        Column(
+                          children: [
+                            Text(topCard.isNotEmpty ? "Top: ${topCard.toUpperCase()}" : "Top: -", 
+                            style: const TextStyle(color: Colors.yellow, fontSize: 18)),
+                            if (requiredCard.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6.0),
+                                child: Text("Required: ${requiredCard.toUpperCase()}", 
+                                style: const TextStyle(color: Colors.redAccent)),
+                              ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  // allow picking if it's my turn OR if I'm the forced target (my turn will also be set to me in the current logic)
+                                  onTap: isMyTurn ? () => pickCard(myUid) : null,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Container(width: 80, height: 120,
+                                       decoration: BoxDecoration(color: Colors.blueGrey.shade700,
+                                        borderRadius: BorderRadius.circular(12),image: DecorationImage(image: AssetImage("assets/images/card_back.jpeg")))),
+                                      Text("MARKET\n(${deck.length})",
+                                       textAlign: TextAlign.center,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 20),
+                                Container(
+                                  width: 100,
+                                  height: 140,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(image: AssetImage(GameService().showCardImage(topCard))),
+                                    //color: Colors.white,
+                                   borderRadius: BorderRadius.circular(12)),
+                                  //child: Text(topCard.isNotEmpty ? topCard.toUpperCase() : '-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                  child: Stack(children: [
+              
+                  Image.asset(GameService().showCardImage(topCard), 
+                  height: 100,
+                width: 100,fit: BoxFit.fill,),
+                Container(
+                  margin: EdgeInsets.all(5),
+                  child: 
+                      Text(GameService().showCardNumber(topCard),
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold)
+                      )
+              
+                  
+                ),
+              
+                Container(
+                  alignment: Alignment.bottomRight,
+                  margin: EdgeInsets.only(bottom: 50),
+                  child:
+                      Text(GameService().showCardNumber(topCard),
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold),)
+              
+                  
+                )
+              
+                ],),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 10),
+                            // show forced-pick hint when blocked
+                            if (blockedByForcedPick)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                child: Text(
+                                  "You must pick $forcedPickCount card${forcedPickCount > 1 ? 's' : ''} from MARKET",
+                                  style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            Text(isMyTurn ? "Your Turn" : 
+                            // authState.user!.username,
+                           "Opponent's Turn", 
+                            style: TextStyle(color: isMyTurn ? Colors.lightGreenAccent : Colors.white, fontSize: 16)),
+                          ],
+                        ),
+              
+                        // My Hand
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.all(8),
+                          child: Row(
+                            children: List.generate(myHand.length, (i) {
+                              final c = myHand[i];
+                              // IMPORTANT: prevent card play when blocked by forced pick
+                              final playable = myHandPlayability[i] && isMyTurn && !blockedByForcedPick;
+              
+                              return _cardWidget(c, playable: playable, onTap: playable ? () {
+                               
+                               
+                                setState(() {
+                                   myHand.remove(c);
+                                  
+                                });
+
+                                playCard(c) ;
+                              } : null);
+                            }),
                           ),
-                        Text(isMyTurn ? "Your Turn" : 
-                        // authState.user!.username,
-                       "Opponent's Turn", 
-                        style: TextStyle(color: isMyTurn ? Colors.lightGreenAccent : Colors.white, fontSize: 16)),
+                        ),
                       ],
                     ),
+                  );
+                },
+              ),
+            )
           
-                    // My Hand
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.all(8),
-                      child: Row(
-                        children: List.generate(myHand.length, (i) {
-                          final c = myHand[i];
-                          // IMPORTANT: prevent card play when blocked by forced pick
-                          final playable = myHandPlayability[i] && isMyTurn && !blockedByForcedPick;
           
-                          return _cardWidget(c, playable: playable, onTap: playable ? () => playCard(c) : null);
-                        }),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+          
+
+          
         ),
       ),
     );

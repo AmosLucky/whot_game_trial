@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../models/user_model.dart';
-import '../providers/providers.dart';
+//import '../providers/providers.dart';
 import '../services/auth_service.dart';
 import '../states/auth_state.dart';
 
@@ -42,7 +42,16 @@ class AuthController extends StateNotifier<AuthState> {
       }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+
+      
     }
+  }
+
+  Future<void> updateBalance(double amount,userId)async{
+   final response = await _authService.updateBalance(amount, userId);
+   state =state.copyWith(user: state.user!.copyWith(balance: state.user!.balance +amount));
+   
+   
   }
 
   Future<void> login({
@@ -55,8 +64,8 @@ class AuthController extends StateNotifier<AuthState> {
       final response = await _authService.signInWithEmail(email: email, password: password);
 
       if (response.success) {
-         print("000000000000000000");
-        print(AppUser.fromDoc(response.userSnapshot!));
+        //  print("000000000000000000");
+        // print(AppUser.fromDoc(response.userSnapshot!));
         state = state.copyWith(isLoading: false,
         isSuccess: true, 
         user: AppUser.fromDoc(response.userSnapshot!));
@@ -80,8 +89,8 @@ class AuthController extends StateNotifier<AuthState> {
       
 
       if (response.success) {
-        print("000000000000000000");
-        print(AppUser.fromDoc(response.userSnapshot!));
+        // print("000000000000000000");
+        // print(AppUser.fromDoc(response.userSnapshot!));
         
         state = state.copyWith(
         isLoading: false,

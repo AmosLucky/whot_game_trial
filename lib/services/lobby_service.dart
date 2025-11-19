@@ -297,28 +297,58 @@ Future<String?> tryMatchPlayers(String myUid) async {
 
 
 
+// List<Map<String, dynamic>> _generateWhotDeck() {
+//   final shapes = ['circle', 'cross', 'triangle', 'square', 'star'];
+//   final cards = <Map<String, dynamic>>[];
+
+//   // Generate 70 cards (1–14 × 5 shapes)
+//   for (var shape in shapes) {
+//     for (var num = 1; num <= 14; num++) {
+//       cards.add({'shape': shape, 'number': num});
+//     }
+//   }
+
+//   // Shuffle the deck
+//   cards.shuffle(Random());
+
+//   // Take only 50 cards randomly
+//   final selectedDeck = cards.take(50).toList();
+
+//   // (Optional) Uncomment this line if you want to later include Whot (20)
+//   // selectedDeck.add({'shape': 'whot', 'number': 20});
+
+//   return selectedDeck;
+// }
+
+
 List<Map<String, dynamic>> _generateWhotDeck() {
-  final shapes = ['circle', 'cross', 'triangle', 'square', 'star'];
+  final deckRules = {
+    'star':     [1, 2, 3, 4, 5, 7, 8],
+    'cross':    [1, 2, 3, 5, 7, 10, 11, 13, 14],
+    'square':   [1, 2, 3, 5, 7, 10, 11, 13, 14],
+    'circle':   [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14],
+    'triangle': [1, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14],
+  };
+
   final cards = <Map<String, dynamic>>[];
 
-  // Generate 70 cards (1–14 × 5 shapes)
-  for (var shape in shapes) {
-    for (var num = 1; num <= 14; num++) {
+  // Generate allowed cards only
+  deckRules.forEach((shape, numbers) {
+    for (var num in numbers) {
       cards.add({'shape': shape, 'number': num});
     }
-  }
+  });
 
   // Shuffle the deck
   cards.shuffle(Random());
 
-  // Take only 50 cards randomly
-  final selectedDeck = cards.take(50).toList();
+  // You can choose to remove or limit cards if needed:
+  // final selectedDeck = cards.take(50).toList();
+  // return selectedDeck;
 
-  // (Optional) Uncomment this line if you want to later include Whot (20)
-  // selectedDeck.add({'shape': 'whot', 'number': 20});
-
-  return selectedDeck;
+  return cards; // return full correct Whot deck
 }
+
 
 createNewDeck(String gameId)async{
   final allCards = _generateWhotDeck();

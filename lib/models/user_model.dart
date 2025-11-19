@@ -9,7 +9,7 @@ class AppUser {
   final String email;
   final String phone;
   final String photoUrl;
-  final int balance;
+  final double balance;
   final bool isOnline;
 
   AppUser({
@@ -32,7 +32,7 @@ class AppUser {
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
       photoUrl: data['photoUrl'] ?? '',
-      balance: data['balance'] ?? 0,
+      balance: (data['balance'] ?? 0).toDouble(),
       isOnline: data['isOnline'] ?? false,
     );
   }
@@ -48,5 +48,28 @@ class AppUser {
       'balance': balance,
       'isOnline': isOnline,
     };
+  }
+
+  /// 🔥 Added copyWith method
+  AppUser copyWith({
+    String? uid,
+    String? displayName,
+    String? username,
+    String? email,
+    String? phone,
+    String? photoUrl,
+    double? balance,
+    bool? isOnline,
+  }) {
+    return AppUser(
+      uid: uid ?? this.uid,
+      displayName: displayName ?? this.displayName,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      photoUrl: photoUrl ?? this.photoUrl,
+      balance: balance ?? this.balance,
+      isOnline: isOnline ?? this.isOnline,
+    );
   }
 }

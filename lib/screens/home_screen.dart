@@ -5,14 +5,17 @@ import 'package:naija_whot_trail/widgets/image_background.dart';
 
 import '../constants/app_constant.dart';
 import '../providers/providers.dart';
+import '../services/sound_service.dart';
 import 'lobby_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   HomeScreen({super.key});
+  
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
+     
     // print("pppppppppppppppppppppppp++++");
     // print(authState.user);
     return Scaffold(
@@ -119,7 +122,7 @@ class HomeScreen extends ConsumerWidget {
                 // Big PLAY Button
                 GestureDetector(
                   onTap: () {
-                    if (authState.user!.balance > minPayment) {
+                    if (authState.user!.balance >= minPayment) {
                       // TODO: Go to matchmaking screen
                       Navigator.push(
                         context,
@@ -206,25 +209,28 @@ class HomeScreen extends ConsumerWidget {
                 SizedBox(height: 20),
 
                 // Fund Wallet Button
-                GestureDetector(
-                  onTap: () {
-                    // TODO: Navigate to wallet page
-                  },
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF5B2020),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(width: 5, color: Colors.white),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "Leaderboard",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                Visibility(
+                  visible: false,
+                  child: GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to wallet page
+                    },
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.5,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF5B2020),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(width: 5, color: Colors.white),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "Leaderboard",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

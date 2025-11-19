@@ -126,6 +126,13 @@ class AuthService {
     }
   }
 
+   Future<void> updateBalance(amount,userId)async{
+    await 
+            _firestore.collection("users")
+            .doc(userId.toString())
+            .update({"balance": FieldValue.increment(amount)});
+  }
+
 
   // 🧩 Auto Login (check local first)
   Future<AuthResult> autoLogin() async {

@@ -103,7 +103,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             FadeTransition(
               opacity: _fadeAnim,
               child: Text(
-                "Naija Whot",
+                "Whot Nation",
                 style: const TextStyle(
                   color: Colors.white,
                   fontFamily: 'StackSans',
