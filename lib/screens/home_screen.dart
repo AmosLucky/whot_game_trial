@@ -6,6 +6,7 @@ import 'package:naija_whot_trail/widgets/image_background.dart';
 import '../constants/app_constant.dart';
 import '../providers/providers.dart';
 import '../services/sound_service.dart';
+import '../widgets/match_alert.dart';
 import 'lobby_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -121,17 +122,18 @@ class HomeScreen extends ConsumerWidget {
 
                 // Big PLAY Button
                 GestureDetector(
-                  onTap: () {
-                    if (authState.user!.balance >= minPayment) {
-                      // TODO: Go to matchmaking screen
+                  onTap: ()async {
+                     final minPayment = await showBetDialog(context);
+                     print(minPayment);
+                    if (authState.user!.balance >= minPayment!) {
+                      //TODO: Go to matchmaking screen
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (_) => LobbyScreen(
-                                //   lobbyService: lobbyService,
-                                //  authService: authService,
-                                // You can fetch real balance later
+                                amount: minPayment,
+                                
                               ),
                         ),
                       );

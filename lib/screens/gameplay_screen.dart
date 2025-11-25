@@ -42,6 +42,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   @override
   void initState() {
+ 
+    
    _soundService.playBackground();
     
     
@@ -851,6 +853,7 @@ Future<void> playCardss(String rawCard) async {
     
     final authState = ref.read(authControllerProvider);
     final orientation = MediaQuery.of(context).orientation;
+   
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (b,c){
@@ -888,11 +891,13 @@ Future<void> playCardss(String rawCard) async {
                 
               
                   final data = doc.data() ?? {};
-                 if (data.isEmpty) return const Center(child: CircularProgressIndicator());
+                 if (data.isEmpty || data.entries.length < 2) return const Center(child: CircularProgressIndicator());
               
                   _transactionalInitIfNeeded();
               
                   final players = _playersFromData(data);
+                  print("099999999090000000000900000000");
+                  print(players);
                   if (players.isEmpty || players.length < 2) {
                     return const Center(child: Text('Waiting for opponent...', style: TextStyle(color: Colors.white)));
                   }

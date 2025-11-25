@@ -39,7 +39,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     // _checkForMatch(user.uid);
   
 
-     final gameId = await widget.lobbyService.tryMatchPlayers(user.uid);
+     final gameId = await widget.lobbyService.tryMatchPlayers(user.uid,200);
      print("333");
      print(gameId);
      if(gameId != null){
@@ -91,7 +91,7 @@ void _listenForMatch() async{
 
 
   Future<void> _checkForMatch(String uid) async {
-    final gameId = await widget.lobbyService.tryMatchPlayers(uid);
+    final gameId = await widget.lobbyService.tryMatchPlayers(uid,200);
     print("oooo");
     print(gameId);
 

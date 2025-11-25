@@ -146,7 +146,7 @@ class LobbyService {
 
   /// Try to match players in lobby
  
-Future<String?> tryMatchPlayers(String myUid) async {
+Future<String?> tryMatchPlayers(String myUid,int amount) async {
   print("09000");
   final firestore = FirebaseFirestore.instance;
   final lobbyRef = firestore.collection('lobby');
@@ -159,6 +159,7 @@ Future<String?> tryMatchPlayers(String myUid) async {
     await lobbyRef.doc(myUid).set({
       'joinedAt': FieldValue.serverTimestamp(),
       'status':'waiting',
+      'amount':amount,
       "id":myUid
     });
   //}
@@ -170,7 +171,9 @@ Future<String?> tryMatchPlayers(String myUid) async {
   
 
   // ✅ Step 2: Fetch all waiting players (excluding me)
-  final lobbySnapshot = await lobbyRef.where('status', isEqualTo: 'waiting').get();
+  final lobbySnapshot = await lobbyRef.where('status', isEqualTo: 'waiting')
+  .where( 'amount',isEqualTo: amount)
+  .get();
   final waitingPlayers =
       lobbySnapshot.docs.map((e) => e.id).where((id) => id != myUid).toList();
 
@@ -241,11 +244,11 @@ Future<String?> tryMatchPlayers(String myUid) async {
 
     // ✅ Step 8: Update both users balance to "- minPayment"
     transaction.update(usersRef.doc(myUid), {
-      'balance': myUserSnap['balance'] - minPayment,
+      'balance': myUserSnap['balance'] - amount,
       
     });
     transaction.update(usersRef.doc(opponentUid), {
-      'balance': oppUserSnap['balance'] - minPayment,
+      'balance': oppUserSnap['balance'] - amount,
     });
 
     print('🎮 New Game Created: ${gameRef.id} between $myUid and $opponentUid');

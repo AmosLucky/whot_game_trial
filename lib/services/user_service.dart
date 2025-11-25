@@ -69,12 +69,12 @@ class UserService {
     }
   }
 
-  /// Get current user's full data (shortcut)
-  Future<Map<String, dynamic>?> getUser() async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
-    return await getUserData(user.uid);
-  }
+  // /// Get current user's full data (shortcut)
+  // Future<Map<String, dynamic>?> getUser1() async {
+  //   final user = _auth.currentUser;
+  //   if (user == null) return null;
+  //   return await getUserData(user.uid);
+  // }
 
   /// Update user's coin balance
   Future<void> updateUserBalance(String uid, int newBalance) async {

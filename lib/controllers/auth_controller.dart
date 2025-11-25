@@ -109,6 +109,26 @@ class AuthController extends StateNotifier<AuthState> {
 
   }
 
+  Future refreshUser()async{
+  final response = await  _authService.refreshUser(state.user!.uid);
+
+     if (response.success) {
+        // print("000000000000000000");
+        // print(AppUser.fromDoc(response.userSnapshot!));
+        print("User updated successfully");
+        
+        // state = state.copyWith(
+        // isLoading: false,
+        // isSuccess: true, 
+        // isFailure: false,
+        // user: AppUser.fromDoc(response.userSnapshot!));
+      } else {
+         
+        state = state.copyWith(
+            isLoading: false, isSuccess: false, isFailure:true, error: response.message ?? 'Login failed');
+      }
+  }
+
   void logout() {
     state = const AuthState();
   }

@@ -89,7 +89,7 @@ class _FundWalletPageState extends ConsumerState<FundWalletPage> {
         );
       },
       transactionNotCompleted: (p) {
-        print("failure");
+        //print("failure");
         //debugPrint("==> Transaction failed reason ");
         //showPaymentFailureDialog(context);
          Navigator.pushReplacementNamed(context, "/failedPayment");

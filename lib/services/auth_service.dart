@@ -138,6 +138,7 @@ class AuthService {
   Future<AuthResult> autoLogin() async {
    
     final userData = await localStorage.getUserData();
+    try{
     if (userData != null) {
        
       // Check if FirebaseAuth still has session
@@ -151,6 +152,11 @@ class AuthService {
       }
        
        return AuthResult(success: false,message: "");
+    }catch(e){
+
+       await localStorage.clearUserData();
+       return AuthResult(success: false,message: "");
+    }
     }
    
   
@@ -198,6 +204,22 @@ class AuthService {
       return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+
+
+   Future<AuthResult> refreshUser(String uid)async{
+    try{
+    final docSnapshot = await _firestore.collection('users').doc(uid).get();
+           await localStorage.saveUserData({...docSnapshot.data()!});
+
+
+      return AuthResult(success: true, uid: uid,userSnapshot: docSnapshot);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult(success: false, message: e.message ?? 'Login failed');
+    } catch (e) {
+      
+      return AuthResult(success: false, message: e.toString());
     }
   }
 }

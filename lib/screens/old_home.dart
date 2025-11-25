@@ -50,15 +50,15 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LobbyScreen(
-                //   lobbyService: lobbyService,
-                //  authService: authService, // You can fetch real balance later
-                ),
-              ),
-            );
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (_) => LobbyScreen(
+            //     //   lobbyService: lobbyService,
+            //     //  authService: authService, // You can fetch real balance later
+            //     ),
+            //   ),
+            // );
           },
           child: const Text(
             'PLAY',

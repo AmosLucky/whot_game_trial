@@ -8,9 +8,12 @@ import 'gameplay_screen.dart';
 class LobbyScreen extends ConsumerStatefulWidget {
   // final AuthService authService;
   // final LobbyService lobbyService;
+  final int amount;
 
   const LobbyScreen({
     super.key,
+    required this.amount,
+    
     
   });
 
@@ -40,11 +43,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     // _checkForMatch(user.uid);
   
 
-     final gameId = await ref.read(lobbyServiceProvider).tryMatchPlayers(user.uid);
+     final gameId = await ref.read(lobbyServiceProvider).tryMatchPlayers(user.uid,widget.amount);
      print("333========================");
      print(gameId);
      if(gameId != null){
-       _navigateToGame(gameId);
+      // ref.read(authControllerProvider.notifier).refreshUser();
+      await Future.delayed(Duration(seconds: 5), () {
+        _navigateToGame(gameId);
+  
+});
+
+       
      }else{
       print("No user in lobby ...................");
      }
@@ -73,17 +82,28 @@ void _listenForMatch() async{
       print("pin pin2");
         
         if(gameSnap.exists){
-          print("pin pin3");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => GamePlayScreen(
-              gameId: gameId,
-              myUid: user.uid,
+          
+        _navigateToGame(gameSnap.id);
+  
+
+          //  ref.read(authControllerProvider.notifier).refreshUser();
+
+          // await Future.delayed(Duration(seconds: 5), () {
+
+          //   Navigator.pushReplacement(
+          // context,
+          // MaterialPageRoute(
+          //   builder: (context) => GamePlayScreen(
+          //     gameId: gameId,
+          //     myUid: user.uid,
              
-            ),
-          ),
-        );
+          //   ),
+          // ),
+        //);
+  
+//});
+         
+        
         }
       }
     }
@@ -120,8 +140,10 @@ void _listenForMatch() async{
     if (user == null) return;
 
     await ref.read(lobbyServiceProvider).updatePlayerStatus(user.uid, 'in_game');
+    await ref.read(authControllerProvider.notifier).refreshUser();
 
     if (mounted) {
+      //await Future.delayed(Duration(seconds: 0), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -132,6 +154,7 @@ void _listenForMatch() async{
           ),
         ),
       );
+      //});
     }
   }
 
