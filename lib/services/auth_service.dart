@@ -138,6 +138,9 @@ class AuthService {
   Future<AuthResult> autoLogin() async {
    
     final userData = await localStorage.getUserData();
+    print("kkkkkkkkkkkkkkkkkk");
+    print(userData);
+    
     try{
     if (userData != null) {
        
@@ -148,13 +151,16 @@ class AuthService {
      
       } else {
         // Local data exists but no Firebase session, clear
-        await localStorage.clearUserData();
+       // await localStorage.clearUserData();
       }
        
        return AuthResult(success: false,message: "");
     }catch(e){
 
-       await localStorage.clearUserData();
+      print(e);
+
+
+       //await localStorage.clearUserData();
        return AuthResult(success: false,message: "");
     }
     }
@@ -211,7 +217,7 @@ class AuthService {
    Future<AuthResult> refreshUser(String uid)async{
     try{
     final docSnapshot = await _firestore.collection('users').doc(uid).get();
-           await localStorage.saveUserData({...docSnapshot.data()!});
+           //await localStorage.saveUserData({...docSnapshot.data()!});
 
 
       return AuthResult(success: true, uid: uid,userSnapshot: docSnapshot);

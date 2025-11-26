@@ -9,16 +9,36 @@ import '../services/sound_service.dart';
 import '../widgets/match_alert.dart';
 import 'lobby_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
-  HomeScreen({super.key});
-  
+
+
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConsumerStatefulWidget> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int i = 0;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+@override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    // if(i==0){
+    //    ref.watch(authControllerProvider.notifier).refreshUser();
+    //    i++;
+    //    setState(() {
+         
+    //    });
+      
+
+    // }
      
-    // print("pppppppppppppppppppppppp++++");
-    // print(authState.user);
+   
     return Scaffold(
       // backgroundColor: const Color(0xFF5B2020),
       appBar: AppBar(
@@ -26,7 +46,7 @@ class HomeScreen extends ConsumerWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
-          "Naija Whot",
+          "Whot Nation",
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
@@ -317,5 +337,4 @@ class HomeScreen extends ConsumerWidget {
     ),
   );
 }
-
 }

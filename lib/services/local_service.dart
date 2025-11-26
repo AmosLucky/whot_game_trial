@@ -7,6 +7,7 @@ class LocalStorageService {
 
   // Save user snapshot data
   Future<void> saveUserData(Map<String, dynamic> data) async {
+    
    final cleanedData = <String, dynamic>{};
 
     data.forEach((key, value) {
@@ -26,15 +27,17 @@ class LocalStorageService {
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userKey, jsonEncode(cleanedData));
+    
   }
 
   // Load user snapshot data
   Future<Map<String, dynamic>?> getUserData() async {
+   
+    
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_userKey);
     if (jsonString == null) return null;
-    print(jsonString);
-    print("lllll");
+    
     return jsonDecode(jsonString);
   }
 

@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:naija_whot_trail/screens/home_screen.dart';
 import 'package:pay_with_paystack/pay_with_paystack.dart';
 
 import '../providers/providers.dart';
+import '../providers/transaction_providers.dart';
 import '../widgets/image_background.dart';
 
 class FundWalletPage extends ConsumerStatefulWidget {
@@ -45,6 +47,7 @@ class _FundWalletPageState extends ConsumerState<FundWalletPage> {
     //setState(() => isLoading = true);
 
     // Convert to Kobo
+    
     int chargeAmount =  (amount +percent) * 100 ;
 
     final uniqueTransref = uniqueTransRef();
@@ -58,12 +61,9 @@ class _FundWalletPageState extends ConsumerState<FundWalletPage> {
       amount: chargeAmount.toDouble(),
       callbackUrl: "https://google.com",
       transactionCompleted: (p) async {
-           // print("jjjvvvvvvvvvvvvvvvvvvvvvvv=========");
-        ref.read(authControllerProvider.notifier).updateBalance(amount.toDouble(),userId);
-       // print("jjjvvvvvvvvvvvvvvvvvvvvvvv");
-        
-        
-
+          
+        ref.read(authControllerProvider.notifier).updateBalance(amount.toDouble());
+      
         await showDialog(
           context: context,
           builder:
@@ -246,7 +246,53 @@ class _FundWalletPageState extends ConsumerState<FundWalletPage> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: isLoading ? null : (){
-                            fundWallet();
+                           // fundWallet();
+
+
+                           int amount = int.tryParse(amountController.text.trim()) ?? 0;
+                            var percent = (amount * 0.017).round();
+                            int chargeAmount =  (amount ) + percent ;
+
+                           final uniqueTransRef =
+                                      PayWithPayStack().generateUuidV4();
+                                    //  String amount = widget.booking.amount.toString();
+
+                                  PayWithPayStack().now(
+                                      context: context,
+                                      secretKey:
+                                          "sk_test_9e9889fc89a77e9a534bf45443462a26ecdd563e",
+                                      customerEmail: userState. user!.email,
+                                      reference: uniqueTransRef,
+                                      currency: "NGN",
+                                      amount: 
+                                          ((chargeAmount.toDouble())),
+                                      callbackUrl: "https://akaoru.com",
+                                      transactionCompleted: (paymentinfo)  async{
+                                        //showCancelPaymentDialog(context);
+                                        
+                                       
+                                        ref.read(authControllerProvider.notifier).updateBalance(amount.toDouble());
+                                        ref.read(authControllerProvider.notifier).refreshUser();
+                                        ref.read(transactionControllerProvider.notifier).create(userId: userState.user!.uid, amount: amount, reference: paymentinfo.reference!);
+                                        
+                                          Navigator.pushReplacement(
+                                 context,
+                                MaterialPageRoute(
+                                  builder: (context) => HomeScreen(
+                                    
+                                  ),
+                                ),
+                              );
+                                       
+                                      },
+                                      transactionNotCompleted: (string) {
+                                        showCancelPaymentDialog(context);
+                                  
+                                              var route = MaterialPageRoute(builder: (c)=>HomeScreen());
+                                  Navigator.push(context, route);
+                                        
+                                      });
+
                            
     
 
@@ -289,4 +335,106 @@ class _FundWalletPageState extends ConsumerState<FundWalletPage> {
       ),
     );
   }
+
+   void showCancelPaymentDialog(BuildContext context ) {
+  showDialog(
+    context: context,
+    barrierDismissible: false, // cannot dismiss by tapping outside
+    barrierColor: Color(0xFF5B2020), // background not dimmed
+    builder: (context) {
+      return PopScope(
+        canPop: false,
+        child: Center(
+          child: Material(
+            color: Colors.white,
+            elevation: 8,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Container(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Cancel Payment?',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'You have canceled the payment !!!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // ElevatedButton(
+                          //   onPressed: () {
+                          //     Navigator.pop(context); // close dialog
+                          //     Navigator.pushReplacement(
+                          //       context,
+                          //       MaterialPageRoute(
+                          //         builder: (context) => ScheduleItemWidget(
+                          //           index: index,
+                          //           booking: booking,
+                          //         ),
+                          //       ),
+                          //     );
+                          //   },
+                          //   style: ElevatedButton.styleFrom(
+                          //     backgroundColor: Colors.green,
+                          //     padding: const EdgeInsets.symmetric(
+                          //         horizontal: 24, vertical: 12),
+                          //     shape: RoundedRectangleBorder(
+                          //       borderRadius: BorderRadius.circular(8),
+                          //     ),
+                          //   ),
+                          //   child: const Text('Continue'),
+                          // ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context); // close dialog
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const HomeScreen()),
+                                (route) => false,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Back to Home', style: TextStyle(color: Colors.white),),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 }

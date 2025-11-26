@@ -47,11 +47,17 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> updateBalance(double amount,userId)async{
-   final response = await _authService.updateBalance(amount, userId);
+  Future<void> updateBalance(double amount)async{
+   final response = await _authService.updateBalance(amount, state.user!.uid);
    state =state.copyWith(user: state.user!.copyWith(balance: state.user!.balance +amount));
    
    
+  }
+  Future<void> payWinner(double stekedAmount)async{
+    double amountToWIn = (stekedAmount * 2) * 0.75;//(75 persent of the total statake);
+    updateBalance(amountToWIn);
+
+
   }
 
   Future<void> login({
@@ -64,8 +70,8 @@ class AuthController extends StateNotifier<AuthState> {
       final response = await _authService.signInWithEmail(email: email, password: password);
 
       if (response.success) {
-        //  print("000000000000000000");
-        // print(AppUser.fromDoc(response.userSnapshot!));
+        //  //print("000000000000000000");
+        // //print(AppUser.fromDoc(response.userSnapshot!));
         state = state.copyWith(isLoading: false,
         isSuccess: true, 
         user: AppUser.fromDoc(response.userSnapshot!));
@@ -86,11 +92,13 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       
       final response = await _authService.autoLogin();
+      //print("0000000000000000001");
+      //print(response.userSnapshot);
       
 
       if (response.success) {
-        // print("000000000000000000");
-        // print(AppUser.fromDoc(response.userSnapshot!));
+         //print("000000000000000000");
+         //print(AppUser.fromDoc(response.userSnapshot!));
         
         state = state.copyWith(
         isLoading: false,
@@ -104,6 +112,7 @@ class AuthController extends StateNotifier<AuthState> {
       }
     } catch (e) {
       
+      
       state = state.copyWith(isLoading: false, isFailure:true, error: e.toString());
     }
 
@@ -113,15 +122,13 @@ class AuthController extends StateNotifier<AuthState> {
   final response = await  _authService.refreshUser(state.user!.uid);
 
      if (response.success) {
-        // print("000000000000000000");
-        // print(AppUser.fromDoc(response.userSnapshot!));
-        print("User updated successfully");
+        // //print("000000000000000000");
+        // //print(AppUser.fromDoc(response.userSnapshot!));
+        //print("User updated successfully");
         
-        // state = state.copyWith(
-        // isLoading: false,
-        // isSuccess: true, 
-        // isFailure: false,
-        // user: AppUser.fromDoc(response.userSnapshot!));
+        state = state.copyWith(
+       
+        user: AppUser.fromDoc(response.userSnapshot!));
       } else {
          
         state = state.copyWith(
