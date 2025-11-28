@@ -18,8 +18,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../services/user_service.dart';
-import '../services/game_service.dart';
+import '../../services/user_service.dart';
+import '../../services/game_service.dart';
 import 'gameplay_screen.dart';
 
 class MatchmakingScreen extends StatefulWidget {
@@ -260,16 +260,16 @@ class _MatchmakingScreenState extends State<MatchmakingScreen> {
         return;
       }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GamePlayScreen(
-            gameId: gameId,
-            myUid: myUid!,
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (_) => GamePlayScreen(
+      //       gameId: gameId,
+      //       myUid: myUid!,
            
-          ),
-        ),
-      );
+      //     ),
+      //   ),
+      // );
 
     } catch (e) {
       // transaction failed (opponent claimed, insufficient balance, etc.)

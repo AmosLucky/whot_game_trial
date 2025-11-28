@@ -21,13 +21,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/card_model.dart';
-import '../services/game_service.dart';
-import '../services/sound_service.dart';
-import '../widgets/whot_dialog.dart';
-import '../widgets/action_popup.dart';
-import '../widgets/win_dialog.dart';
-import '../widgets/card_widget.dart';
+import '../../models/card_model.dart';
+import '../../services/game_service.dart';
+import '../../services/sound_service.dart';
+import '../../widgets/whot_dialog.dart';
+import '../../widgets/action_popup.dart';
+import '../../widgets/win_dialog.dart';
+import '../../widgets/card_widget.dart';
 
 class GameScreen extends StatefulWidget {
   final String gameId;

@@ -47,6 +47,60 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateUser(Map<String, dynamic> data) async {
+     state = state.copyWith(isLoading: true, error: null);
+final uid = state.user!.uid;
+  final response = await _authService.updateUserData(uid, data);
+  print(response);
+  print(data);
+  if(response.success){
+    refreshUser();
+
+  }else{
+    state = state.copyWith(isLoading: false);
+
+
+  }
+
+
+
+
+}
+
+
+
+
+Future<void> changePassword({
+  required String oldPassword,
+  required String newPassword,
+  required String confirmPassword,
+}) async {
+  state = state.copyWith(isLoading: true, error: null);
+
+  // Check new password vs confirm
+  if (newPassword != confirmPassword) {
+    state = state.copyWith(isLoading: false, error: "New password and confirm password do not match");
+    return;
+  }
+
+  try {
+   
+    // Update password
+    final response = await _authService.changePassword(newPassword,oldPassword);
+
+    
+
+    if (response.success) {
+      state = state.copyWith(isLoading: false);
+    } else {
+      state = state.copyWith(isLoading: false, error: response.message);
+    }
+  } catch (e) {
+    state = state.copyWith(isLoading: false, error: "Old password is incorrect");
+  }
+}
+
+
   Future<void> updateBalance(double amount)async{
    final response = await _authService.updateBalance(amount, state.user!.uid);
    state =state.copyWith(user: state.user!.copyWith(balance: state.user!.balance +amount));
@@ -54,7 +108,7 @@ class AuthController extends StateNotifier<AuthState> {
    
   }
   Future<void> payWinner(double stekedAmount)async{
-    double amountToWIn = (stekedAmount * 2) * 0.75;//(75 persent of the total statake);
+    double amountToWIn = (stekedAmount * 2) * 0.90;//(0.90 persent of the total statake);
     updateBalance(amountToWIn);
 
 

@@ -118,7 +118,7 @@ class _BetDialogState extends State<_BetDialog>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('₦$amount', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                Text('₦$amount', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16,color: Colors.red)),
                 SizedBox(height: 2),
                 Text('Play', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
               ],
@@ -218,19 +218,19 @@ class _BetDialogState extends State<_BetDialog>
                         Expanded(
                           child: Text('Tip: Higher stakes give bigger match rewards.', style: TextStyle(color: Colors.grey.shade600)),
                         ),
-                        ElevatedButton(
-                          onPressed: () {
-                            // default quick pick: 200 if nothing chosen
-                            final value = _selected ?? 200;
-                            Navigator.of(context).pop(value);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                            elevation: 8,
-                          ),
-                          child: Text('Confirm'),
-                        )
+                        // ElevatedButton(
+                        //   onPressed: () {
+                        //     // default quick pick: 200 if nothing chosen
+                        //     final value = _selected ?? 200;
+                        //     Navigator.of(context).pop(value);
+                        //   },
+                        //   style: ElevatedButton.styleFrom(
+                        //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        //     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        //     elevation: 8,
+                        //   ),
+                        //   child: Text('Confirm'),
+                        // )
                       ],
                     ),
 

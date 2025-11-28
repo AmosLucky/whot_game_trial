@@ -223,6 +223,7 @@ Future<String?> tryMatchPlayers(String myUid,int amount) async {
       'players': [myUid, opponentUid],
       'turn': myUid,
       'status': 'active',
+      'amount': amount,
       'createdAt': FieldValue.serverTimestamp(),
     });
     //Added step ///update the players Lobby

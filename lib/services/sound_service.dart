@@ -6,7 +6,7 @@ class SoundService {
 
   Future<void> playBackground() async {
     await _bgPlayer.setReleaseMode(ReleaseMode.loop);
-    await _bgPlayer.play(AssetSource("music/bg2.mp3"));
+    await _bgPlayer.play(AssetSource("music/bg3.mp3"));
   }
 
   Future<void> stopBackground() async {

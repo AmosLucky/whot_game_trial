@@ -1,7 +1,7 @@
 // lib/app.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:naija_whot_trail/screens/failed_payment.dart';
+import 'package:naija_whot_trail/screens/payment/failed_payment.dart';
 import 'package:naija_whot_trail/screens/home_screen.dart';
 import 'package:naija_whot_trail/screens/auth/login_screen.dart';
 import 'package:naija_whot_trail/screens/auth/register_screen.dart';

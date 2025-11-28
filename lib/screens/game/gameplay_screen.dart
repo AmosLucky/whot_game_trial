@@ -2,7 +2,6 @@
 
 import 'dart:io';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,19 +10,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:naija_whot_trail/services/game_service.dart';
 import 'package:naija_whot_trail/services/lobby_service.dart';
 
-import '../providers/providers.dart';
-import '../services/sound_service.dart';
-import '../widgets/image_background.dart';
+import '../../controllers/countdown_state.dart';
+import '../../providers/game_proider.dart';
+import '../../providers/providers.dart';
+import '../../providers/ring_provider.dart';
+import '../../services/sound_service.dart';
+import '../../widgets/image_background.dart';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
   final String gameId;
   final String myUid;
+  final double amount;
  
 
   const GamePlayScreen({
     Key? key,
     required this.gameId,
     required this.myUid,
+    required this.amount
     
   }) : super(key: key);
 
@@ -42,6 +46,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 
   @override
   void initState() {
+   if(mounted){
+    // showFullScreenLoader(context);
+   }
+
+   
+
  
     
    _soundService.playBackground();
@@ -68,6 +78,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       print(e);
     }
    
+  }
+
+  stopCountDown(){
+    ref.read(turnCountdownProvider.notifier).stop();
   }
 
   String _normalizeCard(dynamic raw) {
@@ -170,12 +184,41 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     return pc[0] == pt[0] || pc[1] == pt[1];
   }
 
+  Future<void> updateRinged(bool ringed)async{
+    final docRef = FirebaseFirestore.instance
+    .collection('games')
+    .doc(widget.gameId);
+
+// Clear opponent's hand
+await docRef.update({
+  // set opponent's hand to empty
+  'ringed': ringed,       // mark game as ended
+ // optional: store loser
+});
+  }
+
+  Future<void> winByTime(opponentId)async{
+    final docRef = FirebaseFirestore.instance
+    .collection('games')
+    .doc(widget.gameId);
+
+// Clear opponent's hand
+await docRef.update({
+  'hands.$opponentId': [], // set opponent's hand to empty
+  'status': 'ended',       // mark game as ended
+  'winner': opponentId,    // optional: store winner
+  'loser': widget.myUid,   // optional: store loser
+});
+  }
+
 Future<void> playCard(String rawCard) async {
+  stopCountDown();
+  
  // print(myHand);
 
 
 
-  _soundService.playEffect("merge.mp3");
+  _soundService.playEffect("play.mp3");
 
   final card = _normalizeCard(rawCard);
   final gameRef = _firestore.collection('games').doc(widget.gameId);
@@ -257,6 +300,7 @@ Future<void> playCard(String rawCard) async {
       }
     }
 
+
     final topCard = _normalizeCard(data['topCard']);
     final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
 
@@ -293,6 +337,7 @@ Future<void> playCard(String rawCard) async {
     // 🟥 --- APPLY NAIJA WHOT RULES ---
     switch (cardNumber) {
       case 1: // Hold On
+       ref.read(turnCountdownProvider.notifier).start();
         nextTurn = widget.myUid; // player plays again
         break;
 
@@ -307,6 +352,7 @@ Future<void> playCard(String rawCard) async {
         break;
 
       case 8: // Suspension - skip opponent
+       ref.read(turnCountdownProvider.notifier).start();
         nextTurn = widget.myUid;
         break;
 
@@ -327,109 +373,109 @@ Future<void> playCard(String rawCard) async {
 }
 
 
-Future<void> playCardss(String rawCard) async {
-  final card = _normalizeCard(rawCard);
-  final gameRef = _firestore.collection('games').doc(widget.gameId);
+// Future<void> playCardss(String rawCard) async {
+//   final card = _normalizeCard(rawCard);
+//   final gameRef = _firestore.collection('games').doc(widget.gameId);
 
-  // 🟩 --- WHOT CARD LOGIC ---
-  if (_isWhot(card)) {
-    final chosen = await chooseShapeDialog(context);
-    if (chosen.isEmpty) return;
+//   // 🟩 --- WHOT CARD LOGIC ---
+//   if (_isWhot(card)) {
+//     final chosen = await chooseShapeDialog(context);
+//     if (chosen.isEmpty) return;
 
-    final chosenShape = chosen.toLowerCase();
+//     final chosenShape = chosen.toLowerCase();
 
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(gameRef);
-      if (!snap.exists) return;
-      final data = snap.data() ?? {};
-      final turn = (data['turn'] ?? '').toString();
-      if (turn != widget.myUid) return;
+//     await _firestore.runTransaction((tx) async {
+//       final snap = await tx.get(gameRef);
+//       if (!snap.exists) return;
+//       final data = snap.data() ?? {};
+//       final turn = (data['turn'] ?? '').toString();
+//       if (turn != widget.myUid) return;
 
-      final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-      final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
-      myHand.remove(card);
-      hands[widget.myUid] = myHand;
+//       final hands = Map<String, dynamic>.from(data['hands'] ?? {});
+//       final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
+//       myHand.remove(card);
+//       hands[widget.myUid] = myHand;
 
-      final players = _playersFromData(data);
-      final next = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
+//       final players = _playersFromData(data);
+//       final next = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
 
-      tx.update(gameRef, {
-        'hands': hands,
-        'topCard': 'whot',
-        'requiredCard': chosenShape,
-        'shapeInPlay': chosenShape,
-        'turn': next,
-        'pendingAction': null,
-      });
-    });
-    return;
-  }
+//       tx.update(gameRef, {
+//         'hands': hands,
+//         'topCard': 'whot',
+//         'requiredCard': chosenShape,
+//         'shapeInPlay': chosenShape,
+//         'turn': next,
+//         'pendingAction': null,
+//       });
+//     });
+//     return;
+//   }
 
-  // 🟨 --- NORMAL CARD LOGIC ---
-  await _firestore.runTransaction((tx) async {
-    final snap = await tx.get(gameRef);
-    if (!snap.exists) return;
-    final data = snap.data() ?? {};
-    final turn = (data['turn'] ?? '').toString();
-    if (turn != widget.myUid) return;
+//   // 🟨 --- NORMAL CARD LOGIC ---
+//   await _firestore.runTransaction((tx) async {
+//     final snap = await tx.get(gameRef);
+//     if (!snap.exists) return;
+//     final data = snap.data() ?? {};
+//     final turn = (data['turn'] ?? '').toString();
+//     if (turn != widget.myUid) return;
 
-    final topCard = _normalizeCard(data['topCard']);
-    final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
+//     final topCard = _normalizeCard(data['topCard']);
+//     final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
 
-    if (!_cardAllowed(card, topCard, requiredCard)) return;
+//     if (!_cardAllowed(card, topCard, requiredCard)) return;
 
-    final hands = Map<String, dynamic>.from(data['hands'] ?? {});
-    final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
-    myHand.remove(card);
-    hands[widget.myUid] = myHand;
+//     final hands = Map<String, dynamic>.from(data['hands'] ?? {});
+//     final myHand = List<String>.from((hands[widget.myUid] ?? []).map(_normalizeCard));
+//     myHand.remove(card);
+//     hands[widget.myUid] = myHand;
 
-    final players = _playersFromData(data);
-    final opponent = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
+//     final players = _playersFromData(data);
+//     final opponent = players.firstWhere((p) => p != widget.myUid, orElse: () => widget.myUid);
 
-    final cardNumber = int.tryParse(card.split('-')[1]) ?? 0;
-    final updates = <String, dynamic>{
-      'hands': hands,
-      'topCard': card,
-      'shapeInPlay': card.split('-')[0],
-      'requiredCard': '',
-      'pendingAction': null,
-    };
+//     final cardNumber = int.tryParse(card.split('-')[1]) ?? 0;
+//     final updates = <String, dynamic>{
+//       'hands': hands,
+//       'topCard': card,
+//       'shapeInPlay': card.split('-')[0],
+//       'requiredCard': '',
+//       'pendingAction': null,
+//     };
 
-    String nextTurn = opponent;
+//     String nextTurn = opponent;
 
-    // 🟥 --- APPLY NAIJA WHOT RULES ---
-    switch (cardNumber) {
-      case 1: // Hold On
-        nextTurn = widget.myUid;
-        break;
+//     // 🟥 --- APPLY NAIJA WHOT RULES ---
+//     switch (cardNumber) {
+//       case 1: // Hold On
+//         nextTurn = widget.myUid;
+//         break;
 
-      case 2: // Pick Two
-        updates['pendingAction'] = {
-          'type': 'force_pick',
-          'count': 2,
-          'target': opponent,
-          'from': widget.myUid,
-        };
-        break;
+//       case 2: // Pick Two
+//         updates['pendingAction'] = {
+//           'type': 'force_pick',
+//           'count': 2,
+//           'target': opponent,
+//           'from': widget.myUid,
+//         };
+//         break;
 
-      case 8: // Suspension
-        nextTurn = widget.myUid;
-        break;
+//       case 8: // Suspension
+//         nextTurn = widget.myUid;
+//         break;
 
-      case 14: // General Market
-        updates['pendingAction'] = {
-          'type': 'force_pick',
-          'count': 1,
-          'target': opponent,
-          'from': widget.myUid,
-        };
-        break;
-    }
+//       case 14: // General Market
+//         updates['pendingAction'] = {
+//           'type': 'force_pick',
+//           'count': 1,
+//           'target': opponent,
+//           'from': widget.myUid,
+//         };
+//         break;
+//     }
 
-    updates['turn'] = nextTurn;
-    tx.update(gameRef, updates);
-  });
-}
+//     updates['turn'] = nextTurn;
+//     tx.update(gameRef, updates);
+//   });
+// }
 
 
 
@@ -457,7 +503,8 @@ Future<void> playCardss(String rawCard) async {
     return chosen;
   }
   Future<void> pickCard(String playerId) async {
-      _soundService.playEffect("merge.mp3");
+    stopCountDown();
+      _soundService.playEffect("play.mp3");
   final ref = _firestore.collection('games').doc(widget.gameId);
   await _firestore.runTransaction((tx) async {
     final snap = await tx.get(ref);
@@ -619,6 +666,10 @@ Future<void> playCardss(String rawCard) async {
     _winDialogShown = true;
 
     await _firestore.collection('games').doc(widget.gameId).update({'status': 'ended'});
+    if(winnerId == widget.myUid){
+      ref.read(authControllerProvider.notifier).payWinner(widget.amount);
+    }
+    
 
      await showDialog(
     context: context,
@@ -814,16 +865,7 @@ Future<void> playCardss(String rawCard) async {
                       ),
                     ),
                     onPressed: () {
-                          if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-        DeviceOrientation.portraitDown,
-      ]);
-    }
-
-
+                         
                      
                        Navigator.pushReplacementNamed(context, '/home');
 
@@ -850,9 +892,35 @@ Future<void> playCardss(String rawCard) async {
 
   @override
   Widget build(BuildContext context) {
+ 
     
     final authState = ref.read(authControllerProvider);
     final orientation = MediaQuery.of(context).orientation;
+    final countdownState = ref.watch(turnCountdownProvider);
+    final hasRinger = ref.watch(hasRingerProvider);  
+       ref.listen<String>(
+      turnProvider(widget.gameId),
+      (prev, next) {
+        final notifier = ref.read(turnCountdownProvider.notifier);
+       
+
+        if (next == widget.myUid) {
+          if(!hasRinger){
+
+            _soundService.playEffect("play.mp3");
+            ref.read(hasRingerProvider.notifier).set(true);
+            
+          }
+          
+          notifier.start();   // My turn → start countdown
+        } else {
+          ref.read(hasRingerProvider.notifier).set(false);
+          
+          notifier.stop();    // Opponent turn → stop countdown
+        }
+      },
+    );
+
    
     return PopScope(
       canPop: false,
@@ -866,6 +934,20 @@ Future<void> playCardss(String rawCard) async {
         appBar: orientation == Orientation.portrait? 
         AppBar(
           automaticallyImplyLeading: false,
+          title:Row(
+    children: [
+      Text("Staked: ₦${widget.amount}"),
+      SizedBox(width: 20),
+      Text(
+        "⏳ ${countdownState.secondsLeft}",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: countdownState.secondsLeft <= 3 ? Colors.red : Colors.white,
+        ),
+      ),
+    ],
+  ),
           actions: [
             // Container(
             //   margin: EdgeInsets.all(10),
@@ -896,8 +978,8 @@ Future<void> playCardss(String rawCard) async {
                   _transactionalInitIfNeeded();
               
                   final players = _playersFromData(data);
-                  print("099999999090000000000900000000");
-                  print(players);
+                 
+                
                   if (players.isEmpty || players.length < 2) {
                     return const Center(child: Text('Waiting for opponent...', style: TextStyle(color: Colors.white)));
                   }
@@ -906,10 +988,15 @@ Future<void> playCardss(String rawCard) async {
                   final opponentId = players.firstWhere((p) => p != myUid, orElse: () => '');
                   final hands = Map<String, dynamic>.from(data['hands'] ?? {});
                   final myHand = List<String>.from((hands[myUid] ?? []).map(_normalizeCard));
+                  if(hands.length < 2){
+                    return Center(child: CircularProgressIndicator(),);
+                  }
                   final opponentHand = List<String>.from((hands[opponentId] ?? []).map(_normalizeCard));
-              
+                
                   // WIN CHECK
               final handsExist = hands.isNotEmpty && hands[widget.myUid] != null && hands[opponentId] != null;
+                
+              
               
               if ( handsExist && !_winDialogShown) {
                 if (myHand.isEmpty) {
@@ -922,6 +1009,7 @@ Future<void> playCardss(String rawCard) async {
                   final topCard = _normalizeCard(data['topCard']);
                   final requiredCard = (data['requiredCard'] ?? '').toString().toLowerCase();
                   final currentTurn = (data['turn'] ?? '').toString();
+                  final hasRinged = (data['ringed'] ?? false);
                   final deck = (data['deck'] is List)
                       ? (data['deck'] as List).map<String>(_normalizeCard).toList()
                       : [];
@@ -931,10 +1019,29 @@ Future<void> playCardss(String rawCard) async {
                   final bool hasPendingForcePick = pending != null && pending['type'] == 'force_pick';
                   final bool blockedByForcedPick = hasPendingForcePick && pending['target'] == myUid;
                   final int forcedPickCount = (pending != null && pending['count'] != null) ? (pending['count'] as int) : 0;
+                  if(blockedByForcedPick){
+                    _soundService.playEffect("play.mp3");
+                  }
                   // -------------------------------------------------------
               
                   final isMyTurn = currentTurn == myUid;
                   final myHandPlayability = myHand.map((c) => _cardAllowed(c, topCard, requiredCard)).toList();
+                 // final countdown = ref.read(turnCountdownProvider.notifier);
+
+                  // if(isMyTurn && !hasRinged ){
+                  //   updateRinged(true);
+
+                    
+                  //   _soundService.playEffect("play.mp3");
+                  // }else{
+                  //   updateRinged(false);
+                  // }
+
+                  if(handsExist && countdownState.secondsLeft==0 && isMyTurn){
+                    winByTime(opponentId);
+                    //opponnents wins
+                     //Future.microtask(() => _showWinDialog(opponentId,authState.user!.username));
+                  }
               
                   return SafeArea(
                     child: Column(
@@ -1047,6 +1154,7 @@ Future<void> playCardss(String rawCard) async {
                             const SizedBox(height: 10),
                             // show forced-pick hint when blocked
                             if (blockedByForcedPick)
+                            
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 6.0),
                                 child: Text(
@@ -1058,6 +1166,15 @@ Future<void> playCardss(String rawCard) async {
                             // authState.user!.username,
                            "Opponent's Turn", 
                             style: TextStyle(color: isMyTurn ? Colors.lightGreenAccent : Colors.white, fontSize: 16)),
+
+                            isMyTurn? Text(
+        "Time ${countdownState.secondsLeft} s",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: countdownState.secondsLeft <= 3 ? Colors.red : Colors.white,
+        ),
+      ):SizedBox.shrink(),
                           ],
                         ),
               
@@ -1068,16 +1185,12 @@ Future<void> playCardss(String rawCard) async {
                           child: Row(
                             children: List.generate(myHand.length, (i) {
                               final c = myHand[i];
+                             
                               // IMPORTANT: prevent card play when blocked by forced pick
                               final playable = myHandPlayability[i] && isMyTurn && !blockedByForcedPick;
               
                               return _cardWidget(c, playable: playable, onTap: playable ? () {
-                               
-                               
-                                setState(() {
-                                   myHand.remove(c);
-                                  
-                                });
+                              
 
                                 playCard(c) ;
                               } : null);
@@ -1099,4 +1212,7 @@ Future<void> playCardss(String rawCard) async {
       ),
     );
   }
+
+ 
+
 }

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:naija_whot_trail/screens/fund_wallet_screen.dart';
+import 'package:naija_whot_trail/screens/payment/fund_wallet_screen.dart';
 import 'package:naija_whot_trail/widgets/image_background.dart';
 
 import '../constants/app_constant.dart';
 import '../providers/providers.dart';
 import '../services/sound_service.dart';
 import '../widgets/match_alert.dart';
-import 'lobby_screen.dart';
+import 'game/lobby_screen.dart';
+import 'settings/setting_page.dart';
 
 
 
@@ -58,6 +59,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: Icon(Icons.settings, color: Colors.white, size: 28),
             onPressed: () {
+              var route = MaterialPageRoute(builder: (_)=>SettingsPage());
+              Navigator.push(context, route);
               // TODO: Navigate to settings
             },
           ),

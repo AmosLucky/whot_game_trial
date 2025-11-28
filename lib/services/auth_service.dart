@@ -134,6 +134,34 @@ class AuthService {
   }
 
 
+  Future<AuthResult> updateUserData(String uid, Map<String, dynamic> data) async {
+    try{
+      final docSnapshot = await _firestore.collection('users').doc(uid).update(data);
+ return AuthResult(success: true, uid: uid);
+    }catch(e){
+       return AuthResult(success: true, uid: uid);
+
+    }
+
+}
+
+Future<AuthResult> changePassword(String newPassword,String oldPassword) async {
+  try {
+     final user = _auth.currentUser!;
+
+    // Re-authenticate user with old password
+    final credential = EmailAuthProvider.credential(email: user.email!, password: oldPassword);
+    await user.reauthenticateWithCredential(credential);
+
+    await _auth.currentUser!.updatePassword(newPassword);
+    return AuthResult(success: true, uid: _auth.currentUser!.uid);
+  } catch (e) {
+    return AuthResult(success: false, uid: _auth.currentUser!.uid, message: e.toString());
+  }
+}
+
+
+
   // 🧩 Auto Login (check local first)
   Future<AuthResult> autoLogin() async {
    

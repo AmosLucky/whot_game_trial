@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/lobby_service.dart';
-import '../services/auth_service.dart';
+import '../../services/lobby_service.dart';
+import '../../services/auth_service.dart';
 import 'gameplay_screen.dart';
 
 class LobbyScreen extends StatefulWidget {
@@ -73,16 +73,16 @@ void _listenForMatch() async{
         
         if(gameSnap.exists){
           print("pin pin3");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => GamePlayScreen(
-              gameId: gameId,
-              myUid: user.uid,
-              // or fetch real balance if available
-            ),
-          ),
-        );
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => GamePlayScreen(
+        //       gameId: gameId,
+        //       myUid: user.uid,
+        //       // or fetch real balance if available
+        //     ),
+        //   ),
+        // );
         }
       }
     }
@@ -121,16 +121,16 @@ void _listenForMatch() async{
     await widget.lobbyService.updatePlayerStatus(user.uid, 'in_game');
 
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => GamePlayScreen(
-            gameId: gameId,
-            myUid: user.uid,
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => GamePlayScreen(
+      //       gameId: gameId,
+      //       myUid: user.uid,
             
-          ),
-        ),
-      );
+      //     ),
+      //   ),
+      // );
     }
   }
 

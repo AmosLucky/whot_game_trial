@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:naija_whot_trail/providers/providers.dart';
 
 import '../models/transaction_model.dart';
 import '../providers/transaction_providers.dart';
@@ -13,12 +14,15 @@ TransactionController(this.ref) : super(TransactionState());
 
 
 // CREATE
-Future<void> create({ required String userId, required int amount, required String reference }) async {
+Future<void> create({ required String userId, 
+required double amount, required String reference ,required String  status,required String type}) async {
 try {
 state = state.copyWith(loading: true);
 await ref.read(transactionServiceProvider).createTransaction(
 userId: userId,
 amount: amount,
+status: status,
+type: type,
 reference: reference
 
 );
@@ -65,4 +69,26 @@ await FirebaseFirestore.instance
 state = state.copyWith(error: e.toString());
 }
 }
+
+
+  Future<void> withdrawAmount({
+    required double amount,
+    required String accountNumber,
+    required String bankName,
+  }) async {
+    state = state.copyWith(loading: true, error: null);
+
+    final uid = ref.read(authControllerProvider).user!.uid;
+    final response = await ref.read(transactionServiceProvider).withdraw(uid, amount);
+
+
+    if (response.success) {
+      await ref.read(authControllerProvider.notifier).refreshUser(); // update balance in state
+      state = state.copyWith(loading: false);
+    } else {
+      state = state.copyWith(loading: false, error: response.message);
+    }
+  }
+
+
 }

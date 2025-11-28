@@ -15,9 +15,11 @@ import 'package:uuid/uuid.dart';
 class TransactionModel {
 final String id;
 final String userId;
-final int amount;
+final double amount;
 final String reference;
 final DateTime createdAt;
+final String status;
+String type;
 
 
 TransactionModel({
@@ -26,6 +28,8 @@ required this.userId,
 required this.amount,
 required this.reference,
 required this.createdAt,
+required this.status,
+required this.type,
 });
 
 
@@ -35,6 +39,8 @@ return {
 'userId': userId,
 'amount': amount,
 'reference': reference,
+'type': type,
+'status': status,
 'createdAt': createdAt.toIso8601String(),
 };
 }
@@ -45,6 +51,8 @@ return TransactionModel(
 id: map['id'],
 userId: map['userId'],
 amount: map['amount'],
+type: map['type'],
+status: map['status'],
 reference: map['reference'],
 createdAt: DateTime.parse(map['createdAt']),
 );

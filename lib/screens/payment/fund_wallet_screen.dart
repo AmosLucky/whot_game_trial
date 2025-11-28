@@ -6,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:naija_whot_trail/screens/home_screen.dart';
 import 'package:pay_with_paystack/pay_with_paystack.dart';
 
-import '../providers/providers.dart';
-import '../providers/transaction_providers.dart';
-import '../widgets/image_background.dart';
+import '../../providers/providers.dart';
+import '../../providers/transaction_providers.dart';
+import '../../widgets/image_background.dart';
 
 class FundWalletPage extends ConsumerStatefulWidget {
   const FundWalletPage({super.key});
@@ -273,7 +273,13 @@ class _FundWalletPageState extends ConsumerState<FundWalletPage> {
                                        
                                         ref.read(authControllerProvider.notifier).updateBalance(amount.toDouble());
                                         ref.read(authControllerProvider.notifier).refreshUser();
-                                        ref.read(transactionControllerProvider.notifier).create(userId: userState.user!.uid, amount: amount, reference: paymentinfo.reference!);
+                                        ref.read(transactionControllerProvider.notifier).create(
+                                          userId: userState.user!.uid,
+                                           amount: amount.toDouble(),
+                                           reference: paymentinfo.reference!,
+                                           status: "success",
+                                           type: "wallet_funding"
+                                           );
                                         
                                           Navigator.pushReplacement(
                                  context,

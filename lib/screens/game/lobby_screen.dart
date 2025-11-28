@@ -138,6 +138,7 @@ void _listenForMatch() async{
   void _navigateToGame(String gameId) async {
     final user = ref.read(authControllerProvider).user;
     if (user == null) return;
+    
 
     await ref.read(lobbyServiceProvider).updatePlayerStatus(user.uid, 'in_game');
     await ref.read(authControllerProvider.notifier).refreshUser();
@@ -150,6 +151,7 @@ void _listenForMatch() async{
           builder: (context) => GamePlayScreen(
             gameId: gameId,
             myUid: user.uid,
+            amount: widget.amount.toDouble(),
             
           ),
         ),

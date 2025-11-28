@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:naija_whot_trail/services/lobby_service.dart';
 import 'package:naija_whot_trail/services/auth_service.dart';
-import 'package:naija_whot_trail/screens/lobby_screen.dart';
+import 'package:naija_whot_trail/screens/game/lobby_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final AuthService authService;
